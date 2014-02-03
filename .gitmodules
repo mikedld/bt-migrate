@@ -1,0 +1,4 @@
+[submodule "3rd-party/jsoncpp"]
+	path = 3rd-party/jsoncpp
+	url = https://github.com/mikedld/jsoncpp-mirror.git
+	branch = patches
