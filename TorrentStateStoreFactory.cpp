@@ -16,10 +16,10 @@
 
 #include "TorrentStateStoreFactory.h"
 
-#include "BitTorrentStateStore.h"
 #include "DelugeStateStore.h"
 #include "Exception.h"
 #include "TransmissionStateStore.h"
+#include "uTorrentStateStore.h"
 
 #include <boost/filesystem/path.hpp>
 
@@ -34,12 +34,12 @@ ITorrentStateStorePtr TorrentStateStoreFactory::CreateForClient(TorrentClient::E
 {
     switch (client)
     {
-    case TorrentClient::BitTorrent:
-        return ITorrentStateStorePtr(new BitTorrentStateStore());
     case TorrentClient::Deluge:
         return ITorrentStateStorePtr(new DelugeStateStore());
     case TorrentClient::Transmission:
         return ITorrentStateStorePtr(new TransmissionStateStore());
+    case TorrentClient::uTorrent:
+        return ITorrentStateStorePtr(new uTorrentStateStore());
     }
 
     throw Exception("Unknown torrent client");

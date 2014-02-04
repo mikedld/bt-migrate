@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-#include "BitTorrentStateStore.h"
+#include "uTorrentStateStore.h"
 
 #include "BencodeCodec.h"
 #include "Box.h"
@@ -35,7 +35,7 @@
 
 namespace fs = boost::filesystem;
 
-namespace BitTorrent
+namespace uTorrent
 {
 
 enum Priority
@@ -54,7 +54,7 @@ enum TorrentState
 
 std::string const ResumeFilename = "resume.dat";
 
-} // namespace BitTorrent
+} // namespace uTorrent
 
 namespace
 {
@@ -77,10 +77,10 @@ Box::LimitInfo FromStoreSpeedLimit(Json::Value const& storeLimit)
     return result;
 }
 
-class BitTorrentTorrentStateIterator : public ITorrentStateIterator
+class uTorrentTorrentStateIterator : public ITorrentStateIterator
 {
 public:
-    BitTorrentTorrentStateIterator(fs::path const& configDir, JsonValuePtr resume, IFileStreamProvider& fileStreamProvider);
+    uTorrentTorrentStateIterator(fs::path const& configDir, JsonValuePtr resume, IFileStreamProvider& fileStreamProvider);
 
 public:
     // ITorrentStateIterator
@@ -95,7 +95,7 @@ private:
     BencodeCodec const m_bencoder;
 };
 
-BitTorrentTorrentStateIterator::BitTorrentTorrentStateIterator(fs::path const& configDir, JsonValuePtr resume,
+uTorrentTorrentStateIterator::uTorrentTorrentStateIterator(fs::path const& configDir, JsonValuePtr resume,
     IFileStreamProvider& fileStreamProvider) :
     m_configDir(configDir),
     m_resume(std::move(resume)),
@@ -107,7 +107,7 @@ BitTorrentTorrentStateIterator::BitTorrentTorrentStateIterator(fs::path const& c
     //
 }
 
-bool BitTorrentTorrentStateIterator::GetNext(Box& nextBox)
+bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
 {
     std::string torrentFilename;
     while (m_torrentIt != m_torrentEnd)
@@ -141,8 +141,7 @@ bool BitTorrentTorrentStateIterator::GetNext(Box& nextBox)
 
     box.AddedAt = resume["added_on"].asInt();
     box.CompletedAt = resume["completed_on"].asInt();
-    box.IsPaused = resume["started"].asInt() == BitTorrent::PausedState ||
-        resume["started"].asInt() == BitTorrent::StoppedState;
+    box.IsPaused = resume["started"].asInt() == uTorrent::PausedState || resume["started"].asInt() == uTorrent::StoppedState;
     box.DownloadedSize = resume["downloaded"].asUInt64();
     box.UploadedSize = resume["uploaded"].asUInt64();
     box.CorruptedSize = resume["corrupt"].asUInt64();
@@ -159,9 +158,9 @@ bool BitTorrentTorrentStateIterator::GetNext(Box& nextBox)
         int const filePriority = filePriorities[i];
 
         Box::FileInfo file;
-        file.DoNotDownload = filePriority == BitTorrent::DoNotDownloadPriority;
+        file.DoNotDownload = filePriority == uTorrent::DoNotDownloadPriority;
         file.Priority = file.DoNotDownload ? Box::NormalPriority : BoxHelper::Priority::FromStore(filePriority,
-            BitTorrent::MinPriority, BitTorrent::MaxPriority);
+            uTorrent::MinPriority, uTorrent::MaxPriority);
         box.Files.push_back(std::move(file));
     }
 
@@ -199,55 +198,55 @@ bool BitTorrentTorrentStateIterator::GetNext(Box& nextBox)
 
 } // namespace
 
-BitTorrentStateStore::BitTorrentStateStore()
+uTorrentStateStore::uTorrentStateStore()
 {
     //
 }
 
-BitTorrentStateStore::~BitTorrentStateStore()
+uTorrentStateStore::~uTorrentStateStore()
 {
     //
 }
 
-TorrentClient::Enum BitTorrentStateStore::GetTorrentClient() const
+TorrentClient::Enum uTorrentStateStore::GetTorrentClient() const
 {
-    return TorrentClient::BitTorrent;
+    return TorrentClient::uTorrent;
 }
 
-fs::path BitTorrentStateStore::GuessConfigDir() const
+fs::path uTorrentStateStore::GuessConfigDir() const
 {
     throw NotImplementedException(__func__);
 }
 
-bool BitTorrentStateStore::IsValidConfigDir(fs::path const& configDir) const
+bool uTorrentStateStore::IsValidConfigDir(fs::path const& configDir) const
 {
     boost::system::error_code dummy;
     return
-        fs::is_regular_file(configDir / BitTorrent::ResumeFilename, dummy);
+        fs::is_regular_file(configDir / uTorrent::ResumeFilename, dummy);
 }
 
-ITorrentStateIteratorPtr BitTorrentStateStore::Export(fs::path const& configDir, IFileStreamProvider& fileStreamProvider) const
+ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& configDir, IFileStreamProvider& fileStreamProvider) const
 {
     if (!IsValidConfigDir(configDir))
     {
-        Throw<Exception>() << "Bad BitTorrent configuration directory: " << configDir;
+        Throw<Exception>() << "Bad uTorrent configuration directory: " << configDir;
     }
 
     JsonValuePtr resume(new Json::Value());
     {
-        ReadStreamPtr const stream = fileStreamProvider.GetReadStream(configDir / BitTorrent::ResumeFilename);
+        ReadStreamPtr const stream = fileStreamProvider.GetReadStream(configDir / uTorrent::ResumeFilename);
         BencodeCodec().Decode(*stream, *resume);
     }
 
-    return ITorrentStateIteratorPtr(new BitTorrentTorrentStateIterator(configDir, std::move(resume), fileStreamProvider));
+    return ITorrentStateIteratorPtr(new uTorrentTorrentStateIterator(configDir, std::move(resume), fileStreamProvider));
 }
 
-void BitTorrentStateStore::Import(fs::path const& configDir, ITorrentStateIteratorPtr /*boxes*/,
+void uTorrentStateStore::Import(fs::path const& configDir, ITorrentStateIteratorPtr /*boxes*/,
     IFileStreamProvider& /*fileStreamProvider*/) const
 {
     if (!IsValidConfigDir(configDir))
     {
-        Throw<Exception>() << "Bad BitTorrent configuration directory: " << configDir;
+        Throw<Exception>() << "Bad uTorrent configuration directory: " << configDir;
     }
 
     throw NotImplementedException(__func__);

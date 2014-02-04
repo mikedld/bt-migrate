@@ -21,9 +21,9 @@ set(${PROJECT_NAME}_SOURCES
     JsonCodec.cpp
     PickleCodec.cpp
 
-    BitTorrentStateStore.cpp
     DelugeStateStore.cpp
     TransmissionStateStore.cpp
+    uTorrentStateStore.cpp
 
     main.cpp
 )
@@ -48,9 +48,9 @@ set(${PROJECT_NAME}_HEADERS
     JsonCodec.h
     PickleCodec.h
 
-    BitTorrentStateStore.h
     DelugeStateStore.h
     TransmissionStateStore.h
+    uTorrentStateStore.h
 )
 
 add_definitions(-DBOOST_ALL_NO_LIB=1 -DBOOST_ALL_DYN_LINK=1)

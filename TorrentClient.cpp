@@ -23,9 +23,9 @@
 namespace ClientName
 {
 
-std::string const BitTorrent = "BitTorrent";
 std::string const Deluge = "Deluge";
 std::string const Transmission = "Transmission";
+std::string const uTorrent = "uTorrent";
 
 } // namespace
 
@@ -33,12 +33,12 @@ std::string TorrentClient::ToString(Enum client)
 {
     switch (client)
     {
-    case BitTorrent:
-        return ClientName::BitTorrent;
     case Deluge:
         return ClientName::Deluge;
     case Transmission:
         return ClientName::Transmission;
+    case uTorrent:
+        return ClientName::uTorrent;
     }
 
     throw Exception("Unknown torrent client");
@@ -48,17 +48,17 @@ TorrentClient::Enum TorrentClient::FromString(std::string client)
 {
     using boost::algorithm::iequals;
 
-    if (iequals(client, ClientName::BitTorrent))
-    {
-        return BitTorrent;
-    }
-    else if (iequals(client, ClientName::Deluge))
+    if (iequals(client, ClientName::Deluge))
     {
         return Deluge;
     }
     else if (iequals(client, ClientName::Transmission))
     {
         return Transmission;
+    }
+    else if (iequals(client, ClientName::uTorrent))
+    {
+        return uTorrent;
     }
 
     throw Exception("Unknown torrent client");

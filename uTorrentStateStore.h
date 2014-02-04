@@ -18,11 +18,11 @@
 
 #include "ITorrentStateStore.h"
 
-class BitTorrentStateStore : public ITorrentStateStore
+class uTorrentStateStore : public ITorrentStateStore
 {
 public:
-    BitTorrentStateStore();
-    virtual ~BitTorrentStateStore();
+    uTorrentStateStore();
+    virtual ~uTorrentStateStore();
 
 public:
     // ITorrentStateStore
