@@ -24,18 +24,8 @@ Box::LimitInfo::LimitInfo() :
 }
 
 Box::FileInfo::FileInfo() :
-    FullSize(0),
-    CurrentSize(0),
     DoNotDownload(false),
-    Priority(0),
-    LastCheckedAt(0)
-{
-    //
-}
-
-Box::BlockInfo::BlockInfo() :
-    IsAvailable(false),
-    LastCheckedAt(0)
+    Priority(0)
 {
     //
 }
@@ -55,7 +45,7 @@ Box::Box() :
     DownloadSpeedLimit(),
     UploadSpeedLimit(),
     Files(),
-    Blocks()
+    ValidBlocks()
 {
     //
 }

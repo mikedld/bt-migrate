@@ -16,29 +16,23 @@
 
 #pragma once
 
-#include <exception>
-#include <string>
+#include "ITorrentStateStore.h"
 
-class Exception : public std::exception
+class BitTorrentStateStore : public ITorrentStateStore
 {
 public:
-    Exception(std::string const& message);
-    virtual ~Exception() throw();
+    BitTorrentStateStore();
+    virtual ~BitTorrentStateStore();
 
 public:
-    // std::exception
-    virtual char const* what() const throw();
+    // ITorrentStateStore
+    virtual TorrentClient::Enum GetTorrentClient() const;
 
-private:
-    std::string const m_message;
-};
+    virtual boost::filesystem::path GuessConfigDir() const;
+    virtual bool IsValidConfigDir(boost::filesystem::path const& configDir) const;
 
-class NotImplementedException : public Exception
-{
-public:
-    NotImplementedException(std::string const& place) :
-        Exception("Not implemented: " + place)
-    {
-        //
-    }
+    virtual ITorrentStateIteratorPtr Export(boost::filesystem::path const& configDir,
+        IFileStreamProvider& fileStreamProvider) const;
+    virtual void Import(boost::filesystem::path const& configDir, ITorrentStateIteratorPtr boxes,
+        IFileStreamProvider& fileStreamProvider) const;
 };

@@ -10,6 +10,7 @@ endif()
 set(${PROJECT_NAME}_SOURCES
     Box.cpp
     BoxHelper.cpp
+    DebugTorrentStateIterator.cpp
     Exception.cpp
     MigrationTransaction.cpp
     TorrentClient.cpp
@@ -20,6 +21,7 @@ set(${PROJECT_NAME}_SOURCES
     JsonCodec.cpp
     PickleCodec.cpp
 
+    BitTorrentStateStore.cpp
     DelugeStateStore.cpp
     TransmissionStateStore.cpp
 
@@ -34,6 +36,7 @@ set(${PROJECT_NAME}_HEADERS
 
     Box.h
     BoxHelper.h
+    DebugTorrentStateIterator.h
     Exception.h
     MigrationTransaction.h
     ThreadSafeIterator.h
@@ -45,6 +48,7 @@ set(${PROJECT_NAME}_HEADERS
     JsonCodec.h
     PickleCodec.h
 
+    BitTorrentStateStore.h
     DelugeStateStore.h
     TransmissionStateStore.h
 )

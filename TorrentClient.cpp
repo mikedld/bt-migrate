@@ -23,6 +23,7 @@
 namespace ClientName
 {
 
+std::string const BitTorrent = "BitTorrent";
 std::string const Deluge = "Deluge";
 std::string const Transmission = "Transmission";
 
@@ -32,6 +33,8 @@ std::string TorrentClient::ToString(Enum client)
 {
     switch (client)
     {
+    case BitTorrent:
+        return ClientName::BitTorrent;
     case Deluge:
         return ClientName::Deluge;
     case Transmission:
@@ -45,7 +48,11 @@ TorrentClient::Enum TorrentClient::FromString(std::string client)
 {
     using boost::algorithm::iequals;
 
-    if (iequals(client, ClientName::Deluge))
+    if (iequals(client, ClientName::BitTorrent))
+    {
+        return BitTorrent;
+    }
+    else if (iequals(client, ClientName::Deluge))
     {
         return Deluge;
     }

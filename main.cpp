@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+#include "DebugTorrentStateIterator.h"
 #include "Exception.h"
 #include "IForwardIterator.h"
 #include "ITorrentStateStore.h"
@@ -156,7 +157,14 @@ int main(int argc, char* argv[])
 
         MigrationTransaction transaction(noBackup, dryRun);
 
-        targetStore->Import(targetDir, sourceStore->Export(sourceDir, transaction), transaction);
+        ITorrentStateIteratorPtr boxes = sourceStore->Export(sourceDir, transaction);
+
+        if (verboseOutput)
+        {
+            boxes.reset(new DebugTorrentStateIterator(std::move(boxes)));
+        }
+
+        targetStore->Import(targetDir, std::move(boxes), transaction);
 
         transaction.Commit();
     }

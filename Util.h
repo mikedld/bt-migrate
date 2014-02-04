@@ -16,11 +16,23 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
+
+namespace boost { namespace filesystem { class path; } }
+namespace Json { class Value; }
 
 namespace Util
 {
 
 long long StringToInt(std::string const& text);
+
+boost::filesystem::path GetPath(std::string const& nativePath);
+
+std::string CalculateSha1(std::string const& data);
+
+std::string BinaryToHex(std::string const& data);
+
+std::uint64_t GetTotalTorrentSize(Json::Value const& torrent);
 
 } // namespace Util

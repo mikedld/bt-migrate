@@ -33,6 +33,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <ctime>
 #include <iostream>
 #include <thread>
 
@@ -95,27 +96,22 @@ Json::Value ToStorePriority(std::vector<Box::FileInfo> const& files)
     return result;
 }
 
-Json::Value ToStoreProgress(std::vector<Box::FileInfo> const& files, std::vector<Box::BlockInfo> const& blocks,
-    std::uint32_t blockSize)
+Json::Value ToStoreProgress(std::size_t fileCount, std::vector<bool> const& validBlocks, std::uint32_t blockSize)
 {
     if (blockSize % (16 * 1024) != 0)
     {
         throw Exception("Block size is not multiple of 16K");
     }
 
-    std::size_t const availableBlockCount = std::count_if(blocks.begin(), blocks.end(),
-        [=](Box::BlockInfo const& block)
-        {
-            return block.IsAvailable;
-        });
+    std::size_t const validBlockCount = std::count(validBlocks.begin(), validBlocks.end(), true);
 
     Json::Value result;
-    if (availableBlockCount == blocks.size())
+    if (validBlockCount == validBlocks.size())
     {
         result["blocks"] = "all";
         result["have"] = "all";
     }
-    else if (availableBlockCount == 0)
+    else if (validBlockCount == 0)
     {
         result["blocks"] = "none";
     }
@@ -126,11 +122,11 @@ Json::Value ToStoreProgress(std::vector<Box::FileInfo> const& files, std::vector
         std::string trBlocks;
         std::uint8_t blockPack = 0;
         std::int8_t blockPackShift = 7;
-        for (Box::BlockInfo const& block : blocks)
+        for (bool const isValidBlock : validBlocks)
         {
             for (std::uint32_t i = 0; i < blocksPerTrBlock; ++i)
             {
-                blockPack |= (block.IsAvailable ? 1 : 0) << blockPackShift;
+                blockPack |= (isValidBlock ? 1 : 0) << blockPackShift;
                 if (--blockPackShift < 0)
                 {
                     trBlocks += static_cast<char>(blockPack);
@@ -148,10 +144,11 @@ Json::Value ToStoreProgress(std::vector<Box::FileInfo> const& files, std::vector
         result["blocks"] = trBlocks;
     }
 
+    Json::Int64 const timeChecked = std::time(nullptr);
     result["time-checked"] = Json::arrayValue;
-    for (Box::FileInfo const& file : files)
+    for (std::size_t i = 0; i < fileCount; ++i)
     {
-        result["time-checked"].append(static_cast<Json::Int64>(file.LastCheckedAt));
+        result["time-checked"].append(timeChecked);
     }
 
     return result;
@@ -197,7 +194,7 @@ void ImportImpl(fs::path const& configDir, ITorrentStateIterator& boxes, IFileSt
         resume["paused"] = box.IsPaused ? 1 : 0;
         //resume["peers2"] = "";
         resume["priority"] = ToStorePriority(box.Files);
-        resume["progress"] = ToStoreProgress(box.Files, box.Blocks, box.BlockSize);
+        resume["progress"] = ToStoreProgress(box.Files.size(), box.ValidBlocks, box.BlockSize);
         resume["ratio-limit"] = ToStoreRatioLimit(box.RatioLimit);
         //resume["seeding-time-seconds"] = 0;
         resume["speed-limit-down"] = ToStoreSpeedLimit(box.DownloadSpeedLimit);
@@ -260,7 +257,7 @@ fs::path TransmissionStateStore::GuessConfigDir() const
 
 #else
 
-    throw Exception("Not implemented");
+    throw NotImplementedException(__func__);
 
 #endif
 }
@@ -281,7 +278,7 @@ ITorrentStateIteratorPtr TransmissionStateStore::Export(fs::path const& configDi
         Throw<Exception>() << "Bad Transmission configuration directory: " << configDir;
     }
 
-    throw Exception("Not implemented");
+    throw NotImplementedException(__func__);
 }
 
 void TransmissionStateStore::Import(fs::path const& configDir, ITorrentStateIteratorPtr boxes,

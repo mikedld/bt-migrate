@@ -49,21 +49,10 @@ struct Box
 
     struct FileInfo
     {
-        std::uint64_t FullSize;
-        std::uint64_t CurrentSize;
         bool DoNotDownload;
         int Priority;
-        std::time_t LastCheckedAt;
 
         FileInfo();
-    };
-
-    struct BlockInfo
-    {
-        bool IsAvailable;
-        std::time_t LastCheckedAt;
-
-        BlockInfo();
     };
 
     Box();
@@ -82,5 +71,5 @@ struct Box
     LimitInfo DownloadSpeedLimit;
     LimitInfo UploadSpeedLimit;
     std::vector<FileInfo> Files;
-    std::vector<BlockInfo> Blocks;
+    std::vector<bool> ValidBlocks;
 };

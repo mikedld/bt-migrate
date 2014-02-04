@@ -19,8 +19,19 @@
 #include "Exception.h"
 #include "Throw.h"
 
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/uuid/sha1.hpp>
+
+#include <json/value.h>
+
+#include <cctype>
 #include <cerrno>
 #include <cstdlib>
+#include <iomanip>
+#include <sstream>
+
+namespace fs = boost::filesystem;
 
 namespace Util
 {
@@ -32,6 +43,70 @@ long long StringToInt(std::string const& text)
     if (result == 0 && errno != 0)
     {
         Throw<Exception>() << "Unable to convert \"" << text << "\" to integer";
+    }
+
+    return result;
+}
+
+fs::path GetPath(std::string const& nativePath)
+{
+    if (nativePath.size() >= 3 && std::isalpha(nativePath[0]) && nativePath[1] == ':' &&
+        (nativePath[2] == '/' || nativePath[2] == '\\'))
+    {
+        // Looks like Windows path
+        return boost::algorithm::replace_all_copy(nativePath, "\\", "/");
+    }
+
+    return nativePath;
+}
+
+std::string CalculateSha1(std::string const& data)
+{
+    boost::uuids::detail::sha1 sha;
+    sha.process_bytes(data.c_str(), data.size());
+    unsigned int result[5];
+    sha.get_digest(result);
+
+    std::ostringstream stream;
+    for (std::size_t i = 0; i < sizeof(result) / sizeof(*result); ++i)
+    {
+        stream << std::hex << std::setw(8) << std::setfill('0') << result[i];
+    }
+
+    return stream.str();
+}
+
+std::string BinaryToHex(std::string const& data)
+{
+    static char const* const HexAlphabet = "0123456789abcdef";
+
+    std::string result;
+
+    for (char const c : data)
+    {
+        result += HexAlphabet[(c >> 4) & 0x0f];
+        result += HexAlphabet[c & 0x0f];
+    }
+
+    return result;
+}
+
+std::uint64_t GetTotalTorrentSize(Json::Value const& torrent)
+{
+    std::uint64_t result = 0;
+
+    Json::Value const& info = torrent["info"];
+
+    if (!info.isMember("files"))
+    {
+        result += info["length"].asUInt64();
+    }
+    else
+    {
+        for (Json::Value const& file : info["files"])
+        {
+            result += file["length"].asUInt64();
+        }
     }
 
     return result;

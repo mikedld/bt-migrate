@@ -16,6 +16,7 @@
 
 #include "TorrentStateStoreFactory.h"
 
+#include "BitTorrentStateStore.h"
 #include "DelugeStateStore.h"
 #include "Exception.h"
 #include "TransmissionStateStore.h"
@@ -33,6 +34,8 @@ ITorrentStateStorePtr TorrentStateStoreFactory::CreateForClient(TorrentClient::E
 {
     switch (client)
     {
+    case TorrentClient::BitTorrent:
+        return ITorrentStateStorePtr(new BitTorrentStateStore());
     case TorrentClient::Deluge:
         return ITorrentStateStorePtr(new DelugeStateStore());
     case TorrentClient::Transmission:

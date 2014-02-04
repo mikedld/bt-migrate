@@ -22,11 +22,12 @@ struct TorrentClient
 {
     enum Enum
     {
+        BitTorrent,
         Deluge,
         Transmission
     };
 
-    static Enum const FirstClient = Deluge;
+    static Enum const FirstClient = BitTorrent;
     static Enum const LastClient = Transmission;
 
     static std::string ToString(Enum client);

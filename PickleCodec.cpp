@@ -434,5 +434,5 @@ void PickleCodec::Decode(std::istream& stream, Json::Value& root) const
 
 void PickleCodec::Encode(std::ostream& /*stream*/, Json::Value const& /*root*/) const
 {
-    throw Exception("Not implemented");
+    throw NotImplementedException(__func__);
 }

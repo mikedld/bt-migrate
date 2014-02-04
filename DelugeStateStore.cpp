@@ -24,6 +24,7 @@
 #include "IForwardIterator.h"
 #include "PickleCodec.h"
 #include "Throw.h"
+#include "Util.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -42,6 +43,7 @@ namespace Deluge
 
 enum Priority
 {
+    DoNotDownloadPriority = 0,
     MinPriority = -6,
     MaxPriority = 6
 };
@@ -79,25 +81,6 @@ Box::LimitInfo FromStoreSpeedLimit(Json::Value const& storeLimit)
     return result;
 }
 
-std::vector<std::uint64_t> CollectFileSizes(Json::Value const& torrentInfo)
-{
-    std::vector<std::uint64_t> result;
-
-    if (!torrentInfo.isMember("files"))
-    {
-        result.push_back(torrentInfo["length"].asUInt64());
-    }
-    else
-    {
-        for (Json::Value const& file : torrentInfo["files"])
-        {
-            result.push_back(file["length"].asUInt64());
-        }
-    }
-
-    return result;
-}
-
 class DelugeTorrentStateIterator : public ITorrentStateIterator
 {
 public:
@@ -106,7 +89,7 @@ public:
 
 public:
     // ITorrentStateIterator
-    virtual bool GetNext(Box& torrentState);
+    virtual bool GetNext(Box& nextBox);
 
 private:
     fs::path const m_stateDir;
@@ -147,15 +130,18 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
         m_bencoder.Decode(stream, fastResume);
     }
 
-    Json::Value torrent;
+    Box box;
+
     {
         ReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(m_stateDir / (infoHash + ".torrent"));
-        m_bencoder.Decode(*stream, torrent);
+        BoxHelper::LoadTorrent(*stream, box);
     }
 
-    Box box;
-    box.InfoHash = infoHash;
-    box.Torrent = torrent;
+    if (box.InfoHash != infoHash)
+    {
+        Throw<Exception>() << "Info hashes don't match: " << box.InfoHash << " vs. " << infoHash;
+    }
+
     box.AddedAt = fastResume["added_time"].asUInt();
     box.CompletedAt = fastResume["completed_time"].asUInt();
     box.IsPaused = state["paused"].asBool();
@@ -169,60 +155,39 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
     box.UploadSpeedLimit = FromStoreSpeedLimit(state["max_upload_speed"]);
 
     Json::Value const& filePriorities = state["file_priorities"];
-    Json::Value const& currentFileSizes = fastResume["file sizes"];
-    std::vector<std::uint64_t> const fileSizes = CollectFileSizes(torrent["info"]);
     for (Json::ArrayIndex i = 0; i < filePriorities.size(); ++i)
     {
         int const filePriority = filePriorities[i].asInt();
-        Json::Value const& currentFileSize = currentFileSizes[i];
 
         Box::FileInfo file;
-        file.FullSize = fileSizes[i];
-        file.CurrentSize = currentFileSize[0].asUInt64();
-        file.DoNotDownload = filePriority == 0;
-        file.Priority = filePriority > 0 ? BoxHelper::Priority::FromStore(filePriority - 1, Deluge::MinPriority,
-            Deluge::MaxPriority) : Box::NormalPriority;
-        file.LastCheckedAt = currentFileSize[1].asUInt();
+        file.DoNotDownload = filePriority == Deluge::DoNotDownloadPriority;
+        file.Priority = file.DoNotDownload ? Box::NormalPriority : BoxHelper::Priority::FromStore(filePriority - 1,
+            Deluge::MinPriority, Deluge::MaxPriority);
         box.Files.push_back(std::move(file));
     }
 
-    Json::Value const& pieces = fastResume["pieces"];
-    std::size_t const blocksPerPiece = fastResume["blocks per piece"].asUInt();
-    std::uint64_t currentFileSize = 0;
-    std::size_t currentFileIndex = 0;
-    for (char c : pieces.asString())
+    std::uint32_t const torrentPieceSize = box.Torrent["info"]["piece length"].asUInt64();
+    // if (torrentPieceSize % box.BlockSize != 0)
+    // {
+    //     Throw<Exception>() << "Unsupported torrent piece size (" << torrentPieceSize << ")";
+    // }
+
+    std::string const pieces = fastResume["pieces"].asString();
+    std::int32_t const blocksPerPiece = torrentPieceSize / box.BlockSize;
+    box.ValidBlocks.reserve(pieces.size() * blocksPerPiece);
+    for (bool const isPieceValid : pieces)
     {
-        std::uint32_t pieceSize = box.BlockSize * blocksPerPiece;
-        std::time_t lastCheckedAt = std::numeric_limits<std::time_t>::max();
-        while (pieceSize > 0 && currentFileIndex < box.Files.size())
-        {
-            Box::FileInfo const& file = box.Files.at(currentFileIndex);
-            lastCheckedAt = std::min(lastCheckedAt, file.LastCheckedAt);
-
-            std::uint64_t const delta = std::min<std::uint64_t>(file.FullSize - currentFileSize, pieceSize);
-            currentFileSize += delta;
-            pieceSize -= delta;
-
-            if (pieceSize > 0)
-            {
-                ++currentFileIndex;
-            }
-        }
-
-        Box::BlockInfo block;
-        block.IsAvailable = c == '\x01';
-        block.LastCheckedAt = lastCheckedAt;
-        box.Blocks.resize(box.Blocks.size() + blocksPerPiece - pieceSize / box.BlockSize, block);
+        box.ValidBlocks.resize(box.ValidBlocks.size() + blocksPerPiece, isPieceValid);
     }
 
-    // if (box.BlockSize * blocksPerPiece != torrent["info"]["piece length"].asUInt64())
-    // {
-    //     std::cout << box.BlockSize << " * " << blocksPerPiece << " = " << (box.BlockSize * blocksPerPiece);
-    //     std::cout << " != " << torrent["info"]["piece length"].asUInt64();// << std::endl;
-    //     std::cout << " (" << pieces.asString().size() << " pieces)";// << std::endl;
-    //     std::cout << std::endl;
-    //     // throw Exception("Ahha! (" + torrent["info"]["name"].asString() + ")");
-    // }
+    std::uint64_t const totalSize = Util::GetTotalTorrentSize(box.Torrent);
+    std::uint64_t const totalBlockCount = (totalSize + box.BlockSize - 1) / box.BlockSize;
+    if (box.ValidBlocks.size() < totalBlockCount)
+    {
+        throw Exception("Unable to export valid pieces");
+    }
+
+    box.ValidBlocks.resize(box.ValidBlocks.size() - (blocksPerPiece - (totalBlockCount % blocksPerPiece)));
 
     nextBox = std::move(box);
     ++m_stateIt;
@@ -294,13 +259,13 @@ ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& configDir, IFi
     JsonValuePtr fastResume(new Json::Value());
     {
         ReadStreamPtr const stream = fileStreamProvider.GetReadStream(stateDir / Deluge::FastResumeFilename);
-        BencodeCodec().Decode(*stream, (*fastResume));
+        BencodeCodec().Decode(*stream, *fastResume);
     }
 
     JsonValuePtr state(new Json::Value());
     {
         ReadStreamPtr const stream = fileStreamProvider.GetReadStream(stateDir / Deluge::StateFilename);
-        PickleCodec().Decode(*stream, (*state));
+        PickleCodec().Decode(*stream, *state);
     }
 
     return ITorrentStateIteratorPtr(new DelugeTorrentStateIterator(stateDir, std::move(fastResume), std::move(state),
@@ -315,5 +280,5 @@ void DelugeStateStore::Import(fs::path const& configDir, ITorrentStateIteratorPt
         Throw<Exception>() << "Bad Deluge configuration directory: " << configDir;
     }
 
-    throw Exception("Not implemented");
+    throw NotImplementedException(__func__);
 }
