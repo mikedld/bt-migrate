@@ -23,6 +23,7 @@
 #include "IFileStreamProvider.h"
 #include "IForwardIterator.h"
 #include "PickleCodec.h"
+#include "Throw.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -285,7 +286,7 @@ ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& configDir, IFi
 {
     if (!IsValidConfigDir(configDir))
     {
-        throw Exception("Bad Deluge configuration directory: \"" + configDir.string() + "\"");
+        Throw<Exception>() << "Bad Deluge configuration directory: " << configDir;
     }
 
     fs::path const stateDir = Deluge::GetStateDir(configDir);
@@ -311,7 +312,7 @@ void DelugeStateStore::Import(fs::path const& configDir, ITorrentStateIteratorPt
 {
     if (!IsValidConfigDir(configDir))
     {
-        throw Exception("Bad Deluge configuration directory: \"" + configDir.string() + "\"");
+        Throw<Exception>() << "Bad Deluge configuration directory: " << configDir;
     }
 
     throw Exception("Not implemented");

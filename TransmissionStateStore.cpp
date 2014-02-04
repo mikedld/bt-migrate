@@ -23,6 +23,7 @@
 #include "IFileStreamProvider.h"
 #include "IForwardIterator.h"
 #include "ThreadSafeIterator.h"
+#include "Throw.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -277,7 +278,7 @@ ITorrentStateIteratorPtr TransmissionStateStore::Export(fs::path const& configDi
 {
     if (!IsValidConfigDir(configDir))
     {
-        throw Exception("Bad Transmission configuration directory: \"" + configDir.string() + "\"");
+        Throw<Exception>() << "Bad Transmission configuration directory: " << configDir;
     }
 
     throw Exception("Not implemented");
@@ -288,7 +289,7 @@ void TransmissionStateStore::Import(fs::path const& configDir, ITorrentStateIter
 {
     if (!IsValidConfigDir(configDir))
     {
-        throw Exception("Bad Transmission configuration directory: \"" + configDir.string() + "\"");
+        Throw<Exception>() << "Bad Transmission configuration directory: " << configDir;
     }
 
     unsigned int const threadCount = std::max(1u, std::thread::hardware_concurrency() / 2u);

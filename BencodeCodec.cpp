@@ -17,6 +17,7 @@
 #include "BencodeCodec.h"
 
 #include "Exception.h"
+#include "Throw.h"
 #include "Util.h"
 
 #include <json/value.h>
@@ -87,7 +88,7 @@ Json::Value DecodeOneValue(std::istream& stream)
         break;
 
     default:
-        throw Exception(std::string("Unable to decode value: ") + c);
+        Throw<Exception>() << "Unable to decode value: " << static_cast<int>(c);
     }
 
     return result;
@@ -135,11 +136,7 @@ void EncodeOneValue(std::ostream& stream, Json::Value const& value)
         break;
 
     default:
-        {
-            std::ostringstream stream;
-            stream << value;
-            throw Exception("Unable to encode value: " + stream.str());
-        }
+        Throw<Exception>() << "Unable to encode value: " << value;
     }
 }
 

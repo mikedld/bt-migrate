@@ -17,6 +17,7 @@
 #include "MigrationTransaction.h"
 
 #include "Exception.h"
+#include "Throw.h"
 
 #include <boost/date_time.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -88,7 +89,7 @@ ReadStreamPtr MigrationTransaction::GetReadStream(fs::path const& path)
     }
     catch (std::exception const&)
     {
-        throw Exception("Unable to open file for reading: " + path.string());
+        Throw<Exception>() << "Unable to open file for reading: " << path;
     }
 
     return std::move(result);
@@ -124,7 +125,7 @@ WriteStreamPtr MigrationTransaction::GetWriteStream(fs::path const& path)
     }
     catch (std::exception const&)
     {
-        throw Exception("Unable to open file for writing: " + path.string());
+        Throw<Exception>() << "Unable to open file for writing: " << path;
     }
 
     return std::move(result);

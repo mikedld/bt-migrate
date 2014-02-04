@@ -17,6 +17,7 @@
 #include "PickleCodec.h"
 
 #include "Exception.h"
+#include "Throw.h"
 #include "Util.h"
 
 #include <json/value.h>
@@ -421,7 +422,7 @@ void PickleCodec::Decode(std::istream& stream, Json::Value& root) const
         // case SHORT_BINSTRING:
         // case BINUNICODE:
         default:
-            throw Exception(std::string("Pickle opcode \"") + (char)code + "\" not yet supported");
+            Throw<Exception>() << "Pickle opcode " << code << " not yet supported";
         }
     }
 

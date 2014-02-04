@@ -63,5 +63,10 @@ set(JSONCPP_WITH_TESTS OFF CACHE BOOL "")
 set(JSONCPP_WITH_POST_BUILD_UNITTEST OFF CACHE BOOL "")
 add_subdirectory(3rd-party/jsoncpp)
 
+# jsoncpp fucks up output directories
+unset(CMAKE_ARCHIVE_OUTPUT_DIRECTORY CACHE)
+unset(CMAKE_LIBRARY_OUTPUT_DIRECTORY CACHE)
+unset(CMAKE_RUNTIME_OUTPUT_DIRECTORY CACHE)
+
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SOURCES} ${${PROJECT_NAME}_HEADERS})
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} jsoncpp_lib)

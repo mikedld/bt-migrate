@@ -14,27 +14,32 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-#include "Util.h"
+#pragma once
 
-#include "Exception.h"
-#include "Throw.h"
+#include <sstream>
 
-#include <cerrno>
-#include <cstdlib>
-
-namespace Util
+template<typename ExceptionT>
+class Throw
 {
-
-long long StringToInt(std::string const& text)
-{
-    errno = 0;
-    long long const result = std::strtoll(text.c_str(), NULL, 10);
-    if (result == 0 && errno != 0)
+public:
+    Throw()
     {
-        Throw<Exception>() << "Unable to convert \"" << text << "\" to integer";
+        //
     }
 
-    return result;
-}
+    [[noreturn]]
+    ~Throw() throw(ExceptionT)
+    {
+        throw ExceptionT(m_message.str());
+    }
 
-} // namespace Util
+    template<typename T>
+    Throw& operator << (T&& value)
+    {
+        m_message << value;
+        return *this;
+    }
+
+private:
+    std::ostringstream m_message;
+};

@@ -18,6 +18,7 @@
 #include "IForwardIterator.h"
 #include "ITorrentStateStore.h"
 #include "MigrationTransaction.h"
+#include "Throw.h"
 #include "TorrentStateStoreFactory.h"
 
 #include <boost/filesystem/operations.hpp>
@@ -64,7 +65,7 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
             clientConfigDir = result->GuessConfigDir();
             if (clientConfigDir.empty())
             {
-                throw Exception("No configuration directory found for " + type + " torrent client");
+                Throw<Exception>() << "No configuration directory found for " << type << " torrent client";
             }
         }
     }
@@ -74,7 +75,7 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
     }
     else
     {
-        throw Exception(type + " torrent client name and/or configuration directory are not specified");
+        Throw<Exception>() << type << " torrent client name and/or configuration directory are not specified";
     }
 
     clientName = TorrentClient::ToString(result->GetTorrentClient());
