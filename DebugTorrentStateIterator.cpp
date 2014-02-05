@@ -35,7 +35,7 @@ std::ostream& operator << (std::ostream& stream, Box::LimitInfo const& value)
         break;
     }
 
-    stream << " / " << value.Value;
+    stream << "/" << value.Value;
 
     return stream;
 }
@@ -43,8 +43,10 @@ std::ostream& operator << (std::ostream& stream, Box::LimitInfo const& value)
 std::ostream& operator << (std::ostream& stream, Box::FileInfo const& value)
 {
     stream <<
-        std::boolalpha << value.DoNotDownload << " / " <<
-        value.Priority;
+        "(" <<
+        std::boolalpha << value.DoNotDownload << "/" <<
+        value.Priority <<
+        ")";
 
     return stream;
 }
@@ -60,7 +62,8 @@ std::ostream& operator << (std::ostream& stream, std::vector<bool> const& value)
 }
 
 DebugTorrentStateIterator::DebugTorrentStateIterator(ITorrentStateIteratorPtr decoratee) :
-    m_decoratee(std::move(decoratee))
+    m_decoratee(std::move(decoratee)),
+    m_coutMutex()
 {
     //
 }
@@ -76,6 +79,8 @@ bool DebugTorrentStateIterator::GetNext(Box& nextBox)
     {
         return false;
     }
+
+    std::lock_guard<std::mutex> lock(m_coutMutex);
 
     std::cout << "---" << std::endl;
 
@@ -94,13 +99,15 @@ bool DebugTorrentStateIterator::GetNext(Box& nextBox)
         "DownloadSpeedLimit = " << nextBox.DownloadSpeedLimit << std::endl <<
         "UploadSpeedLimit = " << nextBox.UploadSpeedLimit << std::endl;
 
-    std::cout << "Files =" << std::endl;
+    std::cout << "Files <" << nextBox.Files.size() << "> =";
     for (Box::FileInfo const& file : nextBox.Files)
     {
-        std::cout << "  " << file << std::endl;
+        std::cout << " " << file;
     }
 
-    std::cout << "ValidBlocks = " << nextBox.ValidBlocks << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "ValidBlocks <" << nextBox.ValidBlocks.size() << "> = " << nextBox.ValidBlocks << std::endl;
 
     return true;
 }

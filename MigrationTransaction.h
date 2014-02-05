@@ -20,6 +20,7 @@
 
 #include <boost/filesystem/path.hpp>
 
+#include <mutex>
 #include <set>
 #include <string>
 
@@ -45,4 +46,5 @@ private:
     bool const m_dryRun;
     std::string const m_transactionId;
     std::set<boost::filesystem::path> m_safePaths;
+    std::mutex m_safePathsMutex;
 };

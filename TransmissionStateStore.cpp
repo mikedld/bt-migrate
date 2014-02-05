@@ -22,8 +22,8 @@
 #include "Exception.h"
 #include "IFileStreamProvider.h"
 #include "IForwardIterator.h"
-#include "ThreadSafeIterator.h"
 #include "Throw.h"
+#include "Util.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <ctime>
+#include <iomanip>
 #include <iostream>
 #include <thread>
 
@@ -50,6 +51,8 @@ enum Priority
 
 std::string const CommonConfigDirName = "transmission";
 std::string const DaemonConfigDirName = "transmission-daemon";
+
+std::uint32_t const BlockSize = 16 * 1024;
 
 fs::path GetResumeDir(fs::path const& configDir)
 {
@@ -96,13 +99,9 @@ Json::Value ToStorePriority(std::vector<Box::FileInfo> const& files)
     return result;
 }
 
-Json::Value ToStoreProgress(std::size_t fileCount, std::vector<bool> const& validBlocks, std::uint32_t blockSize)
+Json::Value ToStoreProgress(std::vector<bool> const& validBlocks, std::uint32_t blockSize, std::uint64_t totalSize,
+    std::size_t fileCount)
 {
-    if (blockSize % (16 * 1024) != 0)
-    {
-        throw Exception("Block size is not multiple of 16K");
-    }
-
     std::size_t const validBlockCount = std::count(validBlocks.begin(), validBlocks.end(), true);
 
     Json::Value result;
@@ -117,14 +116,16 @@ Json::Value ToStoreProgress(std::size_t fileCount, std::vector<bool> const& vali
     }
     else
     {
-        std::uint32_t const blocksPerTrBlock = blockSize / (16 * 1024);
+        std::uint32_t const trBlocksPerBlock = blockSize / Transmission::BlockSize;
 
         std::string trBlocks;
+        trBlocks.reserve((validBlocks.size() * trBlocksPerBlock + 7) / 8);
+
         std::uint8_t blockPack = 0;
         std::int8_t blockPackShift = 7;
         for (bool const isValidBlock : validBlocks)
         {
-            for (std::uint32_t i = 0; i < blocksPerTrBlock; ++i)
+            for (std::uint32_t i = 0; i < trBlocksPerBlock; ++i)
             {
                 blockPack |= (isValidBlock ? 1 : 0) << blockPackShift;
                 if (--blockPackShift < 0)
@@ -140,6 +141,8 @@ Json::Value ToStoreProgress(std::size_t fileCount, std::vector<bool> const& vali
         {
             trBlocks += static_cast<char>(blockPack);
         }
+
+        trBlocks.resize(((totalSize + Transmission::BlockSize - 1) / Transmission::BlockSize + 7) / 8);
 
         result["blocks"] = trBlocks;
     }
@@ -177,6 +180,12 @@ void ImportImpl(fs::path const& configDir, ITorrentStateIterator& boxes, IFileSt
     Box box;
     while (boxes.GetNext(box))
     {
+        if (box.BlockSize % Transmission::BlockSize != 0)
+        {
+            // Transmission doesn't support piece lengths which are not power of two (see trac #4005)
+            continue;
+        }
+
         Json::Value resume;
 
         //resume["activity-date"] = 0;
@@ -194,7 +203,8 @@ void ImportImpl(fs::path const& configDir, ITorrentStateIterator& boxes, IFileSt
         resume["paused"] = box.IsPaused ? 1 : 0;
         //resume["peers2"] = "";
         resume["priority"] = ToStorePriority(box.Files);
-        resume["progress"] = ToStoreProgress(box.Files.size(), box.ValidBlocks, box.BlockSize);
+        resume["progress"] = ToStoreProgress(box.ValidBlocks, box.BlockSize, Util::GetTotalTorrentSize(box.Torrent),
+            box.Files.size());
         resume["ratio-limit"] = ToStoreRatioLimit(box.RatioLimit);
         //resume["seeding-time-seconds"] = 0;
         resume["speed-limit-down"] = ToStoreSpeedLimit(box.DownloadSpeedLimit);
@@ -289,14 +299,12 @@ void TransmissionStateStore::Import(fs::path const& configDir, ITorrentStateIter
         Throw<Exception>() << "Bad Transmission configuration directory: " << configDir;
     }
 
-    unsigned int const threadCount = std::max(1u, std::thread::hardware_concurrency() / 2u);
-
-    ThreadSafeIterator<Box> threadSafeBoxes(std::move(boxes));
+    unsigned int const threadCount = std::max(1u, std::thread::hardware_concurrency());
 
     std::vector<std::thread> threads;
     for (unsigned int i = 0; i < threadCount; ++i)
     {
-        threads.emplace_back(&ImportImpl, std::cref(configDir), std::ref(threadSafeBoxes), std::ref(fileStreamProvider));
+        threads.emplace_back(&ImportImpl, std::cref(configDir), std::ref(*boxes), std::ref(fileStreamProvider));
     }
 
     for (std::thread& thread : threads)

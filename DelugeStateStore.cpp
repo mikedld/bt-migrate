@@ -34,6 +34,7 @@
 
 #include <cstdlib>
 #include <limits>
+#include <mutex>
 #include <sstream>
 
 namespace fs = boost::filesystem;
@@ -98,6 +99,7 @@ private:
     IFileStreamProvider& m_fileStreamProvider;
     Json::Value::iterator m_stateIt;
     Json::Value::iterator const m_stateEnd;
+    std::mutex m_stateItMutex;
     BencodeCodec const m_bencoder;
 };
 
@@ -109,6 +111,7 @@ DelugeTorrentStateIterator::DelugeTorrentStateIterator(fs::path const& stateDir,
     m_fileStreamProvider(fileStreamProvider),
     m_stateIt((*m_state)["torrents"].begin()),
     m_stateEnd((*m_state)["torrents"].end()),
+    m_stateItMutex(),
     m_bencoder()
 {
     //
@@ -116,12 +119,17 @@ DelugeTorrentStateIterator::DelugeTorrentStateIterator(fs::path const& stateDir,
 
 bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
 {
+    std::unique_lock<std::mutex> lock(m_stateItMutex);
+
     if (m_stateIt == m_stateEnd)
     {
         return false;
     }
 
-    Json::Value const& state = *m_stateIt;
+    Json::Value const& state = *m_stateIt++;
+
+    lock.unlock();
+
     std::string const infoHash = state["torrent_id"].asString();
 
     Json::Value fastResume;
@@ -148,13 +156,14 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
     box.DownloadedSize = fastResume["total_downloaded"].asUInt64();
     box.UploadedSize = fastResume["total_uploaded"].asUInt64();
     box.CorruptedSize = 0;
-    box.SavePath = state["save_path"].asString();
-    box.BlockSize = 16 * 1024;
+    box.SavePath = Util::GetPath(state["save_path"].asString()).string();
+    box.BlockSize = box.Torrent["info"]["piece length"].asUInt();
     box.RatioLimit = FromStoreRatioLimit(state["stop_at_ratio"], state["stop_ratio"]);
     box.DownloadSpeedLimit = FromStoreSpeedLimit(state["max_download_speed"]);
     box.UploadSpeedLimit = FromStoreSpeedLimit(state["max_upload_speed"]);
 
     Json::Value const& filePriorities = state["file_priorities"];
+    box.Files.reserve(filePriorities.size());
     for (Json::ArrayIndex i = 0; i < filePriorities.size(); ++i)
     {
         int const filePriority = filePriorities[i].asInt();
@@ -166,31 +175,15 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
         box.Files.push_back(std::move(file));
     }
 
-    std::uint32_t const torrentPieceSize = box.Torrent["info"]["piece length"].asUInt64();
-    // if (torrentPieceSize % box.BlockSize != 0)
-    // {
-    //     Throw<Exception>() << "Unsupported torrent piece size (" << torrentPieceSize << ")";
-    // }
-
-    std::string const pieces = fastResume["pieces"].asString();
-    std::int32_t const blocksPerPiece = torrentPieceSize / box.BlockSize;
-    box.ValidBlocks.reserve(pieces.size() * blocksPerPiece);
-    for (bool const isPieceValid : pieces)
-    {
-        box.ValidBlocks.resize(box.ValidBlocks.size() + blocksPerPiece, isPieceValid);
-    }
-
     std::uint64_t const totalSize = Util::GetTotalTorrentSize(box.Torrent);
     std::uint64_t const totalBlockCount = (totalSize + box.BlockSize - 1) / box.BlockSize;
-    if (box.ValidBlocks.size() < totalBlockCount)
+    box.ValidBlocks.reserve(totalBlockCount);
+    for (bool const isPieceValid : fastResume["pieces"].asString())
     {
-        throw Exception("Unable to export valid pieces");
+        box.ValidBlocks.push_back(isPieceValid);
     }
 
-    box.ValidBlocks.resize(box.ValidBlocks.size() - (blocksPerPiece - (totalBlockCount % blocksPerPiece)));
-
     nextBox = std::move(box);
-    ++m_stateIt;
     return true;
 }
 

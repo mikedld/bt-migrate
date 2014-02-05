@@ -32,6 +32,7 @@
 #include <json/writer.h>
 
 #include <iostream>
+#include <mutex>
 
 namespace fs = boost::filesystem;
 
@@ -92,6 +93,7 @@ private:
     IFileStreamProvider& m_fileStreamProvider;
     Json::Value::iterator m_torrentIt;
     Json::Value::iterator const m_torrentEnd;
+    std::mutex m_torrentItMutex;
     BencodeCodec const m_bencoder;
 };
 
@@ -102,6 +104,7 @@ uTorrentTorrentStateIterator::uTorrentTorrentStateIterator(fs::path const& confi
     m_fileStreamProvider(fileStreamProvider),
     m_torrentIt(m_resume->begin()),
     m_torrentEnd(m_resume->end()),
+    m_torrentItMutex(),
     m_bencoder()
 {
     //
@@ -109,6 +112,8 @@ uTorrentTorrentStateIterator::uTorrentTorrentStateIterator(fs::path const& confi
 
 bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
 {
+    std::unique_lock<std::mutex> lock(m_torrentItMutex);
+
     std::string torrentFilename;
     while (m_torrentIt != m_torrentEnd)
     {
@@ -130,7 +135,9 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
         return false;
     }
 
-    Json::Value const& resume = *m_torrentIt;
+    Json::Value const& resume = *m_torrentIt++;
+
+    lock.unlock();
 
     Box box;
 
@@ -146,14 +153,14 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
     box.UploadedSize = resume["uploaded"].asUInt64();
     box.CorruptedSize = resume["corrupt"].asUInt64();
     box.SavePath = Util::GetPath(resume["path"].asString()).parent_path().string();
-    box.BlockSize = resume["blocksize"].asUInt();
+    box.BlockSize = box.Torrent["info"]["piece length"].asUInt();
     box.RatioLimit = FromStoreRatioLimit(resume["override_seedsettings"], resume["wanted_ratio"]);
     box.DownloadSpeedLimit = FromStoreSpeedLimit(resume["downspeed"]);
     box.UploadSpeedLimit = FromStoreSpeedLimit(resume["upspeed"]);
 
     std::string const filePriorities = resume["prio"].asString();
-    std::size_t const numberOfFiles = resume["modtimes"].size();
-    for (Json::ArrayIndex i = 0; i < numberOfFiles; ++i)
+    box.Files.reserve(filePriorities.size());
+    for (std::size_t i = 0; i < filePriorities.size(); ++i)
     {
         int const filePriority = filePriorities[i];
 
@@ -164,35 +171,21 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
         box.Files.push_back(std::move(file));
     }
 
-    std::uint32_t const torrentPieceSize = box.Torrent["info"]["piece length"].asUInt64();
-    // if (torrentPieceSize % box.BlockSize != 0)
-    // {
-    //     Throw<Exception>() << "Unsupported torrent piece size (" << torrentPieceSize << ")";
-    // }
-
-    std::string const pieces = resume["have"].asString();
-    std::int32_t const blocksPerPiece = torrentPieceSize / box.BlockSize;
-    box.ValidBlocks.reserve(pieces.size() * 8 * blocksPerPiece);
-    for (unsigned char const c : pieces)
+    std::uint64_t const totalSize = Util::GetTotalTorrentSize(box.Torrent);
+    std::uint64_t const totalBlockCount = (totalSize + box.BlockSize - 1) / box.BlockSize;
+    box.ValidBlocks.reserve(totalBlockCount + 8);
+    for (unsigned char const c : resume["have"].asString())
     {
         for (int i = 0; i < 8; ++i)
         {
             bool const isPieceValid = (c & (1 << i)) != 0;
-            box.ValidBlocks.resize(box.ValidBlocks.size() + blocksPerPiece, isPieceValid);
+            box.ValidBlocks.push_back(isPieceValid);
         }
-    }
-
-    std::uint64_t const totalSize = Util::GetTotalTorrentSize(box.Torrent);
-    std::uint32_t const totalBlockCount = (totalSize + box.BlockSize - 1) / box.BlockSize;
-    if (box.ValidBlocks.size() < totalBlockCount)
-    {
-        Throw<Exception>() << "Unable to export valid pieces: " << box.ValidBlocks.size() << " vs. " << totalBlockCount;
     }
 
     box.ValidBlocks.resize(totalBlockCount);
 
     nextBox = std::move(box);
-    ++m_torrentIt;
     return true;
 }
 

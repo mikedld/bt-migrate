@@ -33,7 +33,8 @@ MigrationTransaction::MigrationTransaction(bool writeThrough, bool dryRun) :
     m_writeThrough(writeThrough),
     m_dryRun(dryRun),
     m_transactionId(pt::to_iso_string(pt::microsec_clock::local_time())),
-    m_safePaths()
+    m_safePaths(),
+    m_safePathsMutex()
 {
     //
 }
@@ -119,6 +120,8 @@ WriteStreamPtr MigrationTransaction::GetWriteStream(fs::path const& path)
         }
         else
         {
+            std::lock_guard<std::mutex> lock(m_safePathsMutex);
+
             result->open(GetTemporaryPath(path), std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
             m_safePaths.insert(path);
         }
