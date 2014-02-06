@@ -49,29 +49,29 @@ enum Priority
     MaxPriority = 1
 };
 
-std::string const CommonConfigDirName = "transmission";
-std::string const DaemonConfigDirName = "transmission-daemon";
+std::string const CommonDataDirName = "transmission";
+std::string const DaemonDataDirName = "transmission-daemon";
 
 std::uint32_t const BlockSize = 16 * 1024;
 
-fs::path GetResumeDir(fs::path const& configDir)
+fs::path GetResumeDir(fs::path const& dataDir)
 {
-    return configDir / "resume";
+    return dataDir / "resume";
 }
 
-fs::path GetResumeFilePath(fs::path const& configDir, std::string const& basename)
+fs::path GetResumeFilePath(fs::path const& dataDir, std::string const& basename)
 {
-    return GetResumeDir(configDir) / (basename + ".resume");
+    return GetResumeDir(dataDir) / (basename + ".resume");
 }
 
-fs::path GetTorrentsDir(fs::path const& configDir)
+fs::path GetTorrentsDir(fs::path const& dataDir)
 {
-    return configDir / "torrents";
+    return dataDir / "torrents";
 }
 
-fs::path GetTorrentFilePath(fs::path const& configDir, std::string const& basename)
+fs::path GetTorrentFilePath(fs::path const& dataDir, std::string const& basename)
 {
-    return GetTorrentsDir(configDir) / (basename + ".torrent");
+    return GetTorrentsDir(dataDir) / (basename + ".torrent");
 }
 
 } // namespace Transmission
@@ -174,7 +174,7 @@ Json::Value ToStoreSpeedLimit(Box::LimitInfo const& boxLimit)
     return result;
 }
 
-void ImportImpl(fs::path const& configDir, ITorrentStateIterator& boxes, IFileStreamProvider& fileStreamProvider)
+void ImportImpl(fs::path const& dataDir, ITorrentStateIterator& boxes, IFileStreamProvider& fileStreamProvider)
 {
     BencodeCodec const bencoder;
     Box box;
@@ -217,10 +217,10 @@ void ImportImpl(fs::path const& configDir, ITorrentStateIterator& boxes, IFileSt
         {
             WriteStreamPtr stream;
 
-            stream = fileStreamProvider.GetWriteStream(Transmission::GetTorrentFilePath(configDir, baseName));
+            stream = fileStreamProvider.GetWriteStream(Transmission::GetTorrentFilePath(dataDir, baseName));
             bencoder.Encode(*stream, box.Torrent);
 
-            stream = fileStreamProvider.GetWriteStream(Transmission::GetResumeFilePath(configDir, baseName));
+            stream = fileStreamProvider.GetWriteStream(Transmission::GetResumeFilePath(dataDir, baseName));
             bencoder.Encode(*stream, resume);
         }
         catch (std::exception const& e)
@@ -247,20 +247,20 @@ TorrentClient::Enum TransmissionStateStore::GetTorrentClient() const
     return TorrentClient::Transmission;
 }
 
-fs::path TransmissionStateStore::GuessConfigDir() const
+fs::path TransmissionStateStore::GuessDataDir() const
 {
 #ifndef _WIN32
 
     fs::path const homeDir = std::getenv("HOME");
 
-    if (IsValidConfigDir(homeDir / ".config" / Transmission::CommonConfigDirName))
+    if (IsValidDataDir(homeDir / ".config" / Transmission::CommonDataDirName))
     {
-        return homeDir / ".config" / Transmission::CommonConfigDirName;
+        return homeDir / ".config" / Transmission::CommonDataDirName;
     }
 
-    if (IsValidConfigDir(homeDir / ".config" / Transmission::DaemonConfigDirName))
+    if (IsValidDataDir(homeDir / ".config" / Transmission::DaemonDataDirName))
     {
-        return homeDir / ".config" / Transmission::DaemonConfigDirName;
+        return homeDir / ".config" / Transmission::DaemonDataDirName;
     }
 
     return fs::path();
@@ -272,30 +272,30 @@ fs::path TransmissionStateStore::GuessConfigDir() const
 #endif
 }
 
-bool TransmissionStateStore::IsValidConfigDir(fs::path const& configDir) const
+bool TransmissionStateStore::IsValidDataDir(fs::path const& dataDir) const
 {
     return
-        fs::is_directory(Transmission::GetResumeDir(configDir)) &&
-        fs::is_directory(Transmission::GetTorrentsDir(configDir));
+        fs::is_directory(Transmission::GetResumeDir(dataDir)) &&
+        fs::is_directory(Transmission::GetTorrentsDir(dataDir));
 }
 
-ITorrentStateIteratorPtr TransmissionStateStore::Export(fs::path const& configDir,
+ITorrentStateIteratorPtr TransmissionStateStore::Export(fs::path const& dataDir,
     IFileStreamProvider& /*fileStreamProvider*/) const
 {
-    if (!IsValidConfigDir(configDir))
+    if (!IsValidDataDir(dataDir))
     {
-        Throw<Exception>() << "Bad Transmission configuration directory: " << configDir;
+        Throw<Exception>() << "Bad Transmission configuration directory: " << dataDir;
     }
 
     throw NotImplementedException(__func__);
 }
 
-void TransmissionStateStore::Import(fs::path const& configDir, ITorrentStateIteratorPtr boxes,
+void TransmissionStateStore::Import(fs::path const& dataDir, ITorrentStateIteratorPtr boxes,
     IFileStreamProvider& fileStreamProvider) const
 {
-    if (!IsValidConfigDir(configDir))
+    if (!IsValidDataDir(dataDir))
     {
-        Throw<Exception>() << "Bad Transmission configuration directory: " << configDir;
+        Throw<Exception>() << "Bad Transmission configuration directory: " << dataDir;
     }
 
     unsigned int const threadCount = std::max(1u, std::thread::hardware_concurrency());
@@ -303,7 +303,7 @@ void TransmissionStateStore::Import(fs::path const& configDir, ITorrentStateIter
     std::vector<std::thread> threads;
     for (unsigned int i = 0; i < threadCount; ++i)
     {
-        threads.emplace_back(&ImportImpl, std::cref(configDir), std::ref(*boxes), std::ref(fileStreamProvider));
+        threads.emplace_back(&ImportImpl, std::cref(dataDir), std::ref(*boxes), std::ref(fileStreamProvider));
     }
 
     for (std::thread& thread : threads)

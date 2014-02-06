@@ -81,14 +81,14 @@ Box::LimitInfo FromStoreSpeedLimit(Json::Value const& storeLimit)
 class uTorrentTorrentStateIterator : public ITorrentStateIterator
 {
 public:
-    uTorrentTorrentStateIterator(fs::path const& configDir, JsonValuePtr resume, IFileStreamProvider& fileStreamProvider);
+    uTorrentTorrentStateIterator(fs::path const& dataDir, JsonValuePtr resume, IFileStreamProvider& fileStreamProvider);
 
 public:
     // ITorrentStateIterator
     virtual bool GetNext(Box& nextBox);
 
 private:
-    fs::path const m_configDir;
+    fs::path const m_dataDir;
     JsonValuePtr const m_resume;
     IFileStreamProvider& m_fileStreamProvider;
     Json::Value::iterator m_torrentIt;
@@ -97,9 +97,9 @@ private:
     BencodeCodec const m_bencoder;
 };
 
-uTorrentTorrentStateIterator::uTorrentTorrentStateIterator(fs::path const& configDir, JsonValuePtr resume,
+uTorrentTorrentStateIterator::uTorrentTorrentStateIterator(fs::path const& dataDir, JsonValuePtr resume,
     IFileStreamProvider& fileStreamProvider) :
-    m_configDir(configDir),
+    m_dataDir(dataDir),
     m_resume(std::move(resume)),
     m_fileStreamProvider(fileStreamProvider),
     m_torrentIt(m_resume->begin()),
@@ -141,7 +141,7 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
     Box box;
 
     {
-        ReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(m_configDir / torrentFilename);
+        ReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(m_dataDir / torrentFilename);
         BoxHelper::LoadTorrent(*stream, box);
     }
 
@@ -205,38 +205,38 @@ TorrentClient::Enum uTorrentStateStore::GetTorrentClient() const
     return TorrentClient::uTorrent;
 }
 
-fs::path uTorrentStateStore::GuessConfigDir() const
+fs::path uTorrentStateStore::GuessDataDir() const
 {
     throw NotImplementedException(__func__);
 }
 
-bool uTorrentStateStore::IsValidConfigDir(fs::path const& configDir) const
+bool uTorrentStateStore::IsValidDataDir(fs::path const& dataDir) const
 {
-    return fs::is_regular_file(configDir / uTorrent::ResumeFilename);
+    return fs::is_regular_file(dataDir / uTorrent::ResumeFilename);
 }
 
-ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& configDir, IFileStreamProvider& fileStreamProvider) const
+ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider) const
 {
-    if (!IsValidConfigDir(configDir))
+    if (!IsValidDataDir(dataDir))
     {
-        Throw<Exception>() << "Bad uTorrent configuration directory: " << configDir;
+        Throw<Exception>() << "Bad uTorrent configuration directory: " << dataDir;
     }
 
     JsonValuePtr resume(new Json::Value());
     {
-        ReadStreamPtr const stream = fileStreamProvider.GetReadStream(configDir / uTorrent::ResumeFilename);
+        ReadStreamPtr const stream = fileStreamProvider.GetReadStream(dataDir / uTorrent::ResumeFilename);
         BencodeCodec().Decode(*stream, *resume);
     }
 
-    return ITorrentStateIteratorPtr(new uTorrentTorrentStateIterator(configDir, std::move(resume), fileStreamProvider));
+    return ITorrentStateIteratorPtr(new uTorrentTorrentStateIterator(dataDir, std::move(resume), fileStreamProvider));
 }
 
-void uTorrentStateStore::Import(fs::path const& configDir, ITorrentStateIteratorPtr /*boxes*/,
+void uTorrentStateStore::Import(fs::path const& dataDir, ITorrentStateIteratorPtr /*boxes*/,
     IFileStreamProvider& /*fileStreamProvider*/) const
 {
-    if (!IsValidConfigDir(configDir))
+    if (!IsValidDataDir(dataDir))
     {
-        Throw<Exception>() << "Bad uTorrent configuration directory: " << configDir;
+        Throw<Exception>() << "Bad uTorrent configuration directory: " << dataDir;
     }
 
     throw NotImplementedException(__func__);

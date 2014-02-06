@@ -31,5 +31,5 @@ public:
     TorrentStateStoreFactory();
 
     ITorrentStateStorePtr CreateForClient(TorrentClient::Enum client) const;
-    ITorrentStateStorePtr GuessByConfigDir(boost::filesystem::path const& configDir) const;
+    ITorrentStateStorePtr GuessByDataDir(boost::filesystem::path const& dataDir) const;
 };

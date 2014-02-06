@@ -1,3 +1,19 @@
+// bt-migrate, torrent state migration tool
+// Copyright (C) 2014 Mike Gelfand <mikedld@mikedld.com>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 #include "rTorrentStateStore.h"
 
 #include "BencodeCodec.h"
@@ -43,14 +59,14 @@ namespace
 class rTorrentTorrentStateIterator : public ITorrentStateIterator
 {
 public:
-    rTorrentTorrentStateIterator(fs::path const& configDir, IFileStreamProvider& fileStreamProvider);
+    rTorrentTorrentStateIterator(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider);
 
 public:
     // ITorrentStateIterator
     virtual bool GetNext(Box& nextBox);
 
 private:
-    fs::path const m_configDir;
+    fs::path const m_dataDir;
     IFileStreamProvider& m_fileStreamProvider;
     fs::directory_iterator m_directoryIt;
     fs::directory_iterator const m_directoryEnd;
@@ -59,10 +75,10 @@ private:
 };
 
 
-rTorrentTorrentStateIterator::rTorrentTorrentStateIterator(fs::path const& configDir, IFileStreamProvider& fileStreamProvider) :
-    m_configDir(configDir),
+rTorrentTorrentStateIterator::rTorrentTorrentStateIterator(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider) :
+    m_dataDir(dataDir),
     m_fileStreamProvider(fileStreamProvider),
-    m_directoryIt(m_configDir),
+    m_directoryIt(m_dataDir),
     m_directoryEnd(),
     m_directoryItMutex(),
     m_bencoder()
@@ -181,7 +197,7 @@ TorrentClient::Enum rTorrentStateStore::GetTorrentClient() const
     return TorrentClient::rTorrent;
 }
 
-fs::path rTorrentStateStore::GuessConfigDir() const
+fs::path rTorrentStateStore::GuessDataDir() const
 {
 #ifndef _WIN32
 
@@ -199,7 +215,7 @@ fs::path rTorrentStateStore::GuessConfigDir() const
     }
 
     fs::path const dataDirPath = Util::GetPath(config.get<std::string>("session"));
-    if (!IsValidConfigDir(dataDirPath))
+    if (!IsValidDataDir(dataDirPath))
     {
         return fs::path();
     }
@@ -213,9 +229,9 @@ fs::path rTorrentStateStore::GuessConfigDir() const
 #endif
 }
 
-bool rTorrentStateStore::IsValidConfigDir(fs::path const& configDir) const
+bool rTorrentStateStore::IsValidDataDir(fs::path const& dataDir) const
 {
-    for (fs::directory_iterator it(configDir), end; it != end; ++it)
+    for (fs::directory_iterator it(dataDir), end; it != end; ++it)
     {
         fs::path path = it->path();
         if (path.extension() != rTorrent::StateFileExtension || it->status().type() != fs::regular_file)
@@ -239,13 +255,23 @@ bool rTorrentStateStore::IsValidConfigDir(fs::path const& configDir) const
     return false;
 }
 
-ITorrentStateIteratorPtr rTorrentStateStore::Export(fs::path const& configDir, IFileStreamProvider& fileStreamProvider) const
+ITorrentStateIteratorPtr rTorrentStateStore::Export(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider) const
 {
-    return ITorrentStateIteratorPtr(new rTorrentTorrentStateIterator(configDir, fileStreamProvider));
+    if (!IsValidDataDir(dataDir))
+    {
+        Throw<Exception>() << "Bad rTorrent configuration directory: " << dataDir;
+    }
+
+    return ITorrentStateIteratorPtr(new rTorrentTorrentStateIterator(dataDir, fileStreamProvider));
 }
 
-void rTorrentStateStore::Import(fs::path const& /*configDir*/, ITorrentStateIteratorPtr /*boxes*/,
+void rTorrentStateStore::Import(fs::path const& dataDir, ITorrentStateIteratorPtr /*boxes*/,
     IFileStreamProvider& /*fileStreamProvider*/) const
 {
+    if (!IsValidDataDir(dataDir))
+    {
+        Throw<Exception>() << "Bad rTorrent configuration directory: " << dataDir;
+    }
+
     throw NotImplementedException(__func__);
 }

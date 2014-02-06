@@ -49,13 +49,13 @@ enum Priority
     MaxPriority = 6
 };
 
-std::string const ConfigDirName = "deluge";
+std::string const DataDirName = "deluge";
 std::string const FastResumeFilename = "torrents.fastresume";
 std::string const StateFilename = "torrents.state";
 
-fs::path GetStateDir(fs::path const& configDir)
+fs::path GetStateDir(fs::path const& dataDir)
 {
-    return configDir / "state";
+    return dataDir / "state";
 }
 
 } // namespace Deluge
@@ -204,15 +204,15 @@ TorrentClient::Enum DelugeStateStore::GetTorrentClient() const
     return TorrentClient::Deluge;
 }
 
-fs::path DelugeStateStore::GuessConfigDir() const
+fs::path DelugeStateStore::GuessDataDir() const
 {
 #ifndef _WIN32
 
     fs::path const homeDir = std::getenv("HOME");
 
-    if (IsValidConfigDir(homeDir / ".config" / Deluge::ConfigDirName))
+    if (IsValidDataDir(homeDir / ".config" / Deluge::DataDirName))
     {
-        return homeDir / ".config" / Deluge::ConfigDirName;
+        return homeDir / ".config" / Deluge::DataDirName;
     }
 
     return fs::path();
@@ -221,9 +221,9 @@ fs::path DelugeStateStore::GuessConfigDir() const
 
     fs::path const appDataDir = std::getenv("APPDATA");
 
-    if (IsValidConfigDir(appDataDir / Deluge::ConfigDirName))
+    if (IsValidDataDir(appDataDir / Deluge::DataDirName))
     {
-        return appDataDir / Deluge::ConfigDirName;
+        return appDataDir / Deluge::DataDirName;
     }
 
     return fs::path();
@@ -231,22 +231,22 @@ fs::path DelugeStateStore::GuessConfigDir() const
 #endif
 }
 
-bool DelugeStateStore::IsValidConfigDir(fs::path const& configDir) const
+bool DelugeStateStore::IsValidDataDir(fs::path const& dataDir) const
 {
-    fs::path const stateDir = Deluge::GetStateDir(configDir);
+    fs::path const stateDir = Deluge::GetStateDir(dataDir);
     return
         fs::is_regular_file(stateDir / Deluge::FastResumeFilename) &&
         fs::is_regular_file(stateDir / Deluge::StateFilename);
 }
 
-ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& configDir, IFileStreamProvider& fileStreamProvider) const
+ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider) const
 {
-    if (!IsValidConfigDir(configDir))
+    if (!IsValidDataDir(dataDir))
     {
-        Throw<Exception>() << "Bad Deluge configuration directory: " << configDir;
+        Throw<Exception>() << "Bad Deluge configuration directory: " << dataDir;
     }
 
-    fs::path const stateDir = Deluge::GetStateDir(configDir);
+    fs::path const stateDir = Deluge::GetStateDir(dataDir);
 
     JsonValuePtr fastResume(new Json::Value());
     {
@@ -264,12 +264,12 @@ ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& configDir, IFi
         fileStreamProvider));
 }
 
-void DelugeStateStore::Import(fs::path const& configDir, ITorrentStateIteratorPtr /*boxes*/,
+void DelugeStateStore::Import(fs::path const& dataDir, ITorrentStateIteratorPtr /*boxes*/,
     IFileStreamProvider& /*fileStreamProvider*/) const
 {
-    if (!IsValidConfigDir(configDir))
+    if (!IsValidDataDir(dataDir))
     {
-        Throw<Exception>() << "Bad Deluge configuration directory: " << configDir;
+        Throw<Exception>() << "Bad Deluge configuration directory: " << dataDir;
     }
 
     throw NotImplementedException(__func__);

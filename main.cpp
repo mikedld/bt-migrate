@@ -54,25 +54,25 @@ void PrintUsage(std::string const& programName, po::options_description const& o
 }
 
 ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactory, std::string const& type,
-    std::string& clientName, fs::path& clientConfigDir)
+    std::string& clientName, fs::path& clientDataDir)
 {
     ITorrentStateStorePtr result;
 
     if (!clientName.empty())
     {
         result = storeFactory.CreateForClient(TorrentClient::FromString(clientName));
-        if (clientConfigDir.empty())
+        if (clientDataDir.empty())
         {
-            clientConfigDir = result->GuessConfigDir();
-            if (clientConfigDir.empty())
+            clientDataDir = result->GuessDataDir();
+            if (clientDataDir.empty())
             {
                 Throw<Exception>() << "No configuration directory found for " << type << " torrent client";
             }
         }
     }
-    else if (!clientConfigDir.empty())
+    else if (!clientDataDir.empty())
     {
-        result = storeFactory.GuessByConfigDir(clientConfigDir);
+        result = storeFactory.GuessByDataDir(clientDataDir);
     }
     else
     {
@@ -80,7 +80,7 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
     }
 
     clientName = TorrentClient::ToString(result->GetTorrentClient());
-    clientConfigDir = fs::canonical(clientConfigDir);
+    clientDataDir = fs::canonical(clientDataDir);
 
     return std::move(result);
 }

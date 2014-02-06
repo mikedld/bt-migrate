@@ -38,11 +38,11 @@ public:
 
     virtual TorrentClient::Enum GetTorrentClient() const = 0;
 
-    virtual boost::filesystem::path GuessConfigDir() const = 0;
-    virtual bool IsValidConfigDir(boost::filesystem::path const& configDir) const = 0;
+    virtual boost::filesystem::path GuessDataDir() const = 0;
+    virtual bool IsValidDataDir(boost::filesystem::path const& dataDir) const = 0;
 
-    virtual ITorrentStateIteratorPtr Export(boost::filesystem::path const& configDir,
+    virtual ITorrentStateIteratorPtr Export(boost::filesystem::path const& dataDir,
         IFileStreamProvider& fileStreamProvider) const = 0;
-    virtual void Import(boost::filesystem::path const& configDir, ITorrentStateIteratorPtr boxes,
+    virtual void Import(boost::filesystem::path const& dataDir, ITorrentStateIteratorPtr boxes,
         IFileStreamProvider& fileStreamProvider) const = 0;
 };
