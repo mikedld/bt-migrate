@@ -233,11 +233,10 @@ fs::path DelugeStateStore::GuessConfigDir() const
 
 bool DelugeStateStore::IsValidConfigDir(fs::path const& configDir) const
 {
-    boost::system::error_code dummy;
     fs::path const stateDir = Deluge::GetStateDir(configDir);
     return
-        fs::is_regular_file(stateDir / Deluge::FastResumeFilename, dummy) &&
-        fs::is_regular_file(stateDir / Deluge::StateFilename, dummy);
+        fs::is_regular_file(stateDir / Deluge::FastResumeFilename) &&
+        fs::is_regular_file(stateDir / Deluge::StateFilename);
 }
 
 ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& configDir, IFileStreamProvider& fileStreamProvider) const

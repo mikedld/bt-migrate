@@ -22,6 +22,7 @@ set(${PROJECT_NAME}_SOURCES
     PickleCodec.cpp
 
     DelugeStateStore.cpp
+    rTorrentStateStore.cpp
     TransmissionStateStore.cpp
     uTorrentStateStore.cpp
 
@@ -49,6 +50,7 @@ set(${PROJECT_NAME}_HEADERS
     PickleCodec.h
 
     DelugeStateStore.h
+    rTorrentStateStore.h
     TransmissionStateStore.h
     uTorrentStateStore.h
 )

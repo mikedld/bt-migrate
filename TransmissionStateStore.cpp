@@ -274,10 +274,9 @@ fs::path TransmissionStateStore::GuessConfigDir() const
 
 bool TransmissionStateStore::IsValidConfigDir(fs::path const& configDir) const
 {
-    boost::system::error_code dummy;
     return
-        fs::is_directory(Transmission::GetResumeDir(configDir), dummy) &&
-        fs::is_directory(Transmission::GetTorrentsDir(configDir), dummy);
+        fs::is_directory(Transmission::GetResumeDir(configDir)) &&
+        fs::is_directory(Transmission::GetTorrentsDir(configDir));
 }
 
 ITorrentStateIteratorPtr TransmissionStateStore::Export(fs::path const& configDir,

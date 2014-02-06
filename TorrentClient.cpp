@@ -18,12 +18,13 @@
 
 #include "Exception.h"
 
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 namespace ClientName
 {
 
 std::string const Deluge = "Deluge";
+std::string const rTorrent = "rTorrent";
 std::string const Transmission = "Transmission";
 std::string const uTorrent = "uTorrent";
 
@@ -35,6 +36,8 @@ std::string TorrentClient::ToString(Enum client)
     {
     case Deluge:
         return ClientName::Deluge;
+    case rTorrent:
+        return ClientName::rTorrent;
     case Transmission:
         return ClientName::Transmission;
     case uTorrent:
@@ -51,6 +54,10 @@ TorrentClient::Enum TorrentClient::FromString(std::string client)
     if (iequals(client, ClientName::Deluge))
     {
         return Deluge;
+    }
+    else if (iequals(client, ClientName::rTorrent))
+    {
+        return rTorrent;
     }
     else if (iequals(client, ClientName::Transmission))
     {

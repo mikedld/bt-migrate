@@ -48,14 +48,12 @@ MigrationTransaction::~MigrationTransaction()
 
     for (fs::path const& safePath : m_safePaths)
     {
-        boost::system::error_code dummy;
-
-        if (!fs::exists(safePath, dummy) && fs::exists(GetBackupPath(safePath), dummy))
+        if (!fs::exists(safePath) && fs::exists(GetBackupPath(safePath)))
         {
-            fs::rename(GetBackupPath(safePath), safePath, dummy);
+            fs::rename(GetBackupPath(safePath), safePath);
         }
 
-        fs::remove(GetTemporaryPath(safePath), dummy);
+        fs::remove(GetTemporaryPath(safePath));
     }
 }
 

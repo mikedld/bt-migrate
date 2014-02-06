@@ -114,14 +114,13 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
 {
     std::unique_lock<std::mutex> lock(m_torrentItMutex);
 
-    std::string torrentFilename;
+    fs::path torrentFilename;
     while (m_torrentIt != m_torrentEnd)
     {
-        static std::string const TorrentFileException = ".torrent";
+        static std::string const TorrentFileExtension = ".torrent";
 
-        std::string key = m_torrentIt.key().asString();
-        if (key.size() > TorrentFileException.size() &&
-            key.compare(key.size() - TorrentFileException.size(), TorrentFileException.size(), TorrentFileException) == 0)
+        fs::path key = m_torrentIt.key().asString();
+        if (key.extension() == TorrentFileExtension)
         {
             torrentFilename = std::move(key);
             break;
@@ -130,7 +129,7 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
         ++m_torrentIt;
     }
 
-    if (m_torrentIt == m_torrentEnd)
+    if (torrentFilename.empty())
     {
         return false;
     }
@@ -213,9 +212,7 @@ fs::path uTorrentStateStore::GuessConfigDir() const
 
 bool uTorrentStateStore::IsValidConfigDir(fs::path const& configDir) const
 {
-    boost::system::error_code dummy;
-    return
-        fs::is_regular_file(configDir / uTorrent::ResumeFilename, dummy);
+    return fs::is_regular_file(configDir / uTorrent::ResumeFilename);
 }
 
 ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& configDir, IFileStreamProvider& fileStreamProvider) const

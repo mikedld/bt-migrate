@@ -16,21 +16,23 @@
 
 #pragma once
 
-#include <string>
+#include "ITorrentStateStore.h"
 
-struct TorrentClient
+class rTorrentStateStore : public ITorrentStateStore
 {
-    enum Enum
-    {
-        Deluge,
-        rTorrent,
-        Transmission,
-        uTorrent
-    };
+public:
+    rTorrentStateStore();
+    virtual ~rTorrentStateStore();
 
-    static Enum const FirstClient = Deluge;
-    static Enum const LastClient = uTorrent;
+public:
+    // ITorrentStateStore
+    virtual TorrentClient::Enum GetTorrentClient() const;
 
-    static std::string ToString(Enum client);
-    static Enum FromString(std::string client);
+    virtual boost::filesystem::path GuessConfigDir() const;
+    virtual bool IsValidConfigDir(boost::filesystem::path const& configDir) const;
+
+    virtual ITorrentStateIteratorPtr Export(boost::filesystem::path const& configDir,
+        IFileStreamProvider& fileStreamProvider) const;
+    virtual void Import(boost::filesystem::path const& configDir, ITorrentStateIteratorPtr boxes,
+        IFileStreamProvider& fileStreamProvider) const;
 };
