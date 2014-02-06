@@ -48,13 +48,13 @@ ITorrentStateStorePtr TorrentStateStoreFactory::CreateForClient(TorrentClient::E
     throw Exception("Unknown torrent client");
 }
 
-ITorrentStateStorePtr TorrentStateStoreFactory::GuessByDataDir(fs::path const& dataDir) const
+ITorrentStateStorePtr TorrentStateStoreFactory::GuessByDataDir(fs::path const& dataDir, Intention::Enum intention) const
 {
     ITorrentStateStorePtr result;
     for (int client = TorrentClient::FirstClient; client <= TorrentClient::LastClient; ++client)
     {
         ITorrentStateStorePtr store = CreateForClient(static_cast<TorrentClient::Enum>(client));
-        if (store->IsValidDataDir(dataDir))
+        if (store->IsValidDataDir(dataDir, intention))
         {
             if (result != nullptr)
             {

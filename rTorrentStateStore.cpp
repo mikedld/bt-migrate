@@ -197,7 +197,7 @@ TorrentClient::Enum rTorrentStateStore::GetTorrentClient() const
     return TorrentClient::rTorrent;
 }
 
-fs::path rTorrentStateStore::GuessDataDir() const
+fs::path rTorrentStateStore::GuessDataDir(Intention::Enum intention) const
 {
 #ifndef _WIN32
 
@@ -215,7 +215,7 @@ fs::path rTorrentStateStore::GuessDataDir() const
     }
 
     fs::path const dataDirPath = Util::GetPath(config.get<std::string>("session"));
-    if (!IsValidDataDir(dataDirPath))
+    if (!IsValidDataDir(dataDirPath, intention))
     {
         return fs::path();
     }
@@ -229,8 +229,13 @@ fs::path rTorrentStateStore::GuessDataDir() const
 #endif
 }
 
-bool rTorrentStateStore::IsValidDataDir(fs::path const& dataDir) const
+bool rTorrentStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum intention) const
 {
+    if (intention == Intention::Import)
+    {
+        return fs::is_directory(dataDir);
+    }
+
     for (fs::directory_iterator it(dataDir), end; it != end; ++it)
     {
         fs::path path = it->path();
@@ -257,7 +262,7 @@ bool rTorrentStateStore::IsValidDataDir(fs::path const& dataDir) const
 
 ITorrentStateIteratorPtr rTorrentStateStore::Export(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider) const
 {
-    if (!IsValidDataDir(dataDir))
+    if (!IsValidDataDir(dataDir, Intention::Export))
     {
         Throw<Exception>() << "Bad rTorrent configuration directory: " << dataDir;
     }
@@ -268,7 +273,7 @@ ITorrentStateIteratorPtr rTorrentStateStore::Export(fs::path const& dataDir, IFi
 void rTorrentStateStore::Import(fs::path const& dataDir, ITorrentStateIteratorPtr /*boxes*/,
     IFileStreamProvider& /*fileStreamProvider*/) const
 {
-    if (!IsValidDataDir(dataDir))
+    if (!IsValidDataDir(dataDir, Intention::Import))
     {
         Throw<Exception>() << "Bad rTorrent configuration directory: " << dataDir;
     }

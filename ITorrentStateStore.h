@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "Intention.h"
 #include "TorrentClient.h"
 
 #include <memory>
@@ -38,8 +39,8 @@ public:
 
     virtual TorrentClient::Enum GetTorrentClient() const = 0;
 
-    virtual boost::filesystem::path GuessDataDir() const = 0;
-    virtual bool IsValidDataDir(boost::filesystem::path const& dataDir) const = 0;
+    virtual boost::filesystem::path GuessDataDir(Intention::Enum intention) const = 0;
+    virtual bool IsValidDataDir(boost::filesystem::path const& dataDir, Intention::Enum intention) const = 0;
 
     virtual ITorrentStateIteratorPtr Export(boost::filesystem::path const& dataDir,
         IFileStreamProvider& fileStreamProvider) const = 0;

@@ -53,7 +53,7 @@ void PrintUsage(std::string const& programName, po::options_description const& o
         options;
 }
 
-ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactory, std::string const& type,
+ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactory, Intention::Enum intention,
     std::string& clientName, fs::path& clientDataDir)
 {
     ITorrentStateStorePtr result;
@@ -63,20 +63,22 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
         result = storeFactory.CreateForClient(TorrentClient::FromString(clientName));
         if (clientDataDir.empty())
         {
-            clientDataDir = result->GuessDataDir();
+            clientDataDir = result->GuessDataDir(intention);
             if (clientDataDir.empty())
             {
-                Throw<Exception>() << "No configuration directory found for " << type << " torrent client";
+                Throw<Exception>() << "No configuration directory found for " << (intention == Intention::Export ? "source" :
+                    "target") << " torrent client";
             }
         }
     }
     else if (!clientDataDir.empty())
     {
-        result = storeFactory.GuessByDataDir(clientDataDir);
+        result = storeFactory.GuessByDataDir(clientDataDir, intention);
     }
     else
     {
-        Throw<Exception>() << type << " torrent client name and/or configuration directory are not specified";
+        Throw<Exception>() << (intention == Intention::Export ? "Source" : "Target") <<
+            " torrent client name and/or configuration directory are not specified";
     }
 
     clientName = TorrentClient::ToString(result->GetTorrentClient());
@@ -149,10 +151,10 @@ int main(int argc, char* argv[])
 
         TorrentStateStoreFactory const storeFactory;
 
-        ITorrentStateStorePtr const sourceStore = FindStateStore(storeFactory, "source", sourceName, sourceDir);
+        ITorrentStateStorePtr const sourceStore = FindStateStore(storeFactory, Intention::Export, sourceName, sourceDir);
         std::cout << "Source: " << sourceName << " (" << sourceDir << ")" << std::endl;
 
-        ITorrentStateStorePtr const targetStore = FindStateStore(storeFactory, "target", targetName, targetDir);
+        ITorrentStateStorePtr const targetStore = FindStateStore(storeFactory, Intention::Import, targetName, targetDir);
         std::cout << "Target: " << targetName << " (" << targetDir << ")" << std::endl;
 
         MigrationTransaction transaction(noBackup, dryRun);

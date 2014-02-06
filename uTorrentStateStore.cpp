@@ -205,19 +205,19 @@ TorrentClient::Enum uTorrentStateStore::GetTorrentClient() const
     return TorrentClient::uTorrent;
 }
 
-fs::path uTorrentStateStore::GuessDataDir() const
+fs::path uTorrentStateStore::GuessDataDir(Intention::Enum /*intention*/) const
 {
     throw NotImplementedException(__func__);
 }
 
-bool uTorrentStateStore::IsValidDataDir(fs::path const& dataDir) const
+bool uTorrentStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum /*intention*/) const
 {
     return fs::is_regular_file(dataDir / uTorrent::ResumeFilename);
 }
 
 ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider) const
 {
-    if (!IsValidDataDir(dataDir))
+    if (!IsValidDataDir(dataDir, Intention::Export))
     {
         Throw<Exception>() << "Bad uTorrent configuration directory: " << dataDir;
     }
@@ -234,7 +234,7 @@ ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& dataDir, IFi
 void uTorrentStateStore::Import(fs::path const& dataDir, ITorrentStateIteratorPtr /*boxes*/,
     IFileStreamProvider& /*fileStreamProvider*/) const
 {
-    if (!IsValidDataDir(dataDir))
+    if (!IsValidDataDir(dataDir, Intention::Import))
     {
         Throw<Exception>() << "Bad uTorrent configuration directory: " << dataDir;
     }

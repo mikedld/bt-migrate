@@ -28,8 +28,8 @@ public:
     // ITorrentStateStore
     virtual TorrentClient::Enum GetTorrentClient() const;
 
-    virtual boost::filesystem::path GuessDataDir() const;
-    virtual bool IsValidDataDir(boost::filesystem::path const& dataDir) const;
+    virtual boost::filesystem::path GuessDataDir(Intention::Enum intention) const;
+    virtual bool IsValidDataDir(boost::filesystem::path const& dataDir, Intention::Enum intention) const;
 
     virtual ITorrentStateIteratorPtr Export(boost::filesystem::path const& dataDir,
         IFileStreamProvider& fileStreamProvider) const;

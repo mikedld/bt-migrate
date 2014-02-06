@@ -204,13 +204,13 @@ TorrentClient::Enum DelugeStateStore::GetTorrentClient() const
     return TorrentClient::Deluge;
 }
 
-fs::path DelugeStateStore::GuessDataDir() const
+fs::path DelugeStateStore::GuessDataDir(Intention::Enum intention) const
 {
 #ifndef _WIN32
 
     fs::path const homeDir = std::getenv("HOME");
 
-    if (IsValidDataDir(homeDir / ".config" / Deluge::DataDirName))
+    if (IsValidDataDir(homeDir / ".config" / Deluge::DataDirName, intention))
     {
         return homeDir / ".config" / Deluge::DataDirName;
     }
@@ -221,7 +221,7 @@ fs::path DelugeStateStore::GuessDataDir() const
 
     fs::path const appDataDir = std::getenv("APPDATA");
 
-    if (IsValidDataDir(appDataDir / Deluge::DataDirName))
+    if (IsValidDataDir(appDataDir / Deluge::DataDirName, intention))
     {
         return appDataDir / Deluge::DataDirName;
     }
@@ -231,7 +231,7 @@ fs::path DelugeStateStore::GuessDataDir() const
 #endif
 }
 
-bool DelugeStateStore::IsValidDataDir(fs::path const& dataDir) const
+bool DelugeStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum /*intention*/) const
 {
     fs::path const stateDir = Deluge::GetStateDir(dataDir);
     return
@@ -241,7 +241,7 @@ bool DelugeStateStore::IsValidDataDir(fs::path const& dataDir) const
 
 ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider) const
 {
-    if (!IsValidDataDir(dataDir))
+    if (!IsValidDataDir(dataDir, Intention::Export))
     {
         Throw<Exception>() << "Bad Deluge configuration directory: " << dataDir;
     }
@@ -267,7 +267,7 @@ ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFile
 void DelugeStateStore::Import(fs::path const& dataDir, ITorrentStateIteratorPtr /*boxes*/,
     IFileStreamProvider& /*fileStreamProvider*/) const
 {
-    if (!IsValidDataDir(dataDir))
+    if (!IsValidDataDir(dataDir, Intention::Import))
     {
         Throw<Exception>() << "Bad Deluge configuration directory: " << dataDir;
     }

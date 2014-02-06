@@ -247,18 +247,18 @@ TorrentClient::Enum TransmissionStateStore::GetTorrentClient() const
     return TorrentClient::Transmission;
 }
 
-fs::path TransmissionStateStore::GuessDataDir() const
+fs::path TransmissionStateStore::GuessDataDir(Intention::Enum intention) const
 {
 #ifndef _WIN32
 
     fs::path const homeDir = std::getenv("HOME");
 
-    if (IsValidDataDir(homeDir / ".config" / Transmission::CommonDataDirName))
+    if (IsValidDataDir(homeDir / ".config" / Transmission::CommonDataDirName, intention))
     {
         return homeDir / ".config" / Transmission::CommonDataDirName;
     }
 
-    if (IsValidDataDir(homeDir / ".config" / Transmission::DaemonDataDirName))
+    if (IsValidDataDir(homeDir / ".config" / Transmission::DaemonDataDirName, intention))
     {
         return homeDir / ".config" / Transmission::DaemonDataDirName;
     }
@@ -272,7 +272,7 @@ fs::path TransmissionStateStore::GuessDataDir() const
 #endif
 }
 
-bool TransmissionStateStore::IsValidDataDir(fs::path const& dataDir) const
+bool TransmissionStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum /*intention*/) const
 {
     return
         fs::is_directory(Transmission::GetResumeDir(dataDir)) &&
@@ -282,7 +282,7 @@ bool TransmissionStateStore::IsValidDataDir(fs::path const& dataDir) const
 ITorrentStateIteratorPtr TransmissionStateStore::Export(fs::path const& dataDir,
     IFileStreamProvider& /*fileStreamProvider*/) const
 {
-    if (!IsValidDataDir(dataDir))
+    if (!IsValidDataDir(dataDir, Intention::Export))
     {
         Throw<Exception>() << "Bad Transmission configuration directory: " << dataDir;
     }
@@ -293,7 +293,7 @@ ITorrentStateIteratorPtr TransmissionStateStore::Export(fs::path const& dataDir,
 void TransmissionStateStore::Import(fs::path const& dataDir, ITorrentStateIteratorPtr boxes,
     IFileStreamProvider& fileStreamProvider) const
 {
-    if (!IsValidDataDir(dataDir))
+    if (!IsValidDataDir(dataDir, Intention::Import))
     {
         Throw<Exception>() << "Bad Transmission configuration directory: " << dataDir;
     }

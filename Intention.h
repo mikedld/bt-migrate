@@ -16,21 +16,13 @@
 
 #pragma once
 
-#include "Intention.h"
-#include "TorrentClient.h"
-
-#include <memory>
-
-namespace boost { namespace filesystem { class path; } }
-
-class ITorrentStateStore;
-typedef std::unique_ptr<ITorrentStateStore> ITorrentStateStorePtr;
-
-class TorrentStateStoreFactory
+struct Intention
 {
-public:
-    TorrentStateStoreFactory();
+    enum Enum
+    {
+        Export,
+        Import
+    };
 
-    ITorrentStateStorePtr CreateForClient(TorrentClient::Enum client) const;
-    ITorrentStateStorePtr GuessByDataDir(boost::filesystem::path const& dataDir, Intention::Enum intention) const;
+    //
 };

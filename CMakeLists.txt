@@ -39,6 +39,7 @@ set(${PROJECT_NAME}_HEADERS
     BoxHelper.h
     DebugTorrentStateIterator.h
     Exception.h
+    Intention.h
     MigrationTransaction.h
     ThreadSafeIterator.h
     TorrentClient.h
