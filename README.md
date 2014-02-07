@@ -6,6 +6,8 @@ Inspired by [old 'wontfix' Transmission ticket](https://trac.transmissionbt.com/
 Building
 ========
 
+You will need [boost](http://www.boost.org/) libraries installed. [JsonCpp](http://jsoncpp.sourceforge.net/) library is also used, but it's included as a submodule.
+
 Clone and init submodules:
 
     % git clone https://github.com/mikedld/bt-migrate.git
