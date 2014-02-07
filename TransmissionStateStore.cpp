@@ -40,8 +40,54 @@
 
 namespace fs = boost::filesystem;
 
-namespace Transmission
+namespace Detail
 {
+
+namespace ResumeField
+{
+
+std::string const AddedDate = "added-date";
+std::string const Corrupt = "corrupt";
+std::string const Destination = "destination";
+std::string const Dnd = "dnd";
+std::string const DoneDate = "done-date";
+std::string const Downloaded = "downloaded";
+std::string const Name = "name";
+std::string const Paused = "paused";
+std::string const Priority = "priority";
+std::string const Progress = "progress";
+std::string const RatioLimit = "ratio-limit";
+std::string const SpeedLimitDown = "speed-limit-down";
+std::string const SpeedLimitUp = "speed-limit-up";
+std::string const Uploaded = "uploaded";
+
+namespace ProgressField
+{
+
+std::string const Blocks = "blocks";
+std::string const Have = "have";
+std::string const TimeChecked = "time-checked";
+
+} // namespace ProgressField
+
+namespace RatioLimitField
+{
+
+std::string const RatioMode = "ratio-mode";
+std::string const RatioLimit = "ratio-limit";
+
+} // namespace RatioLimitField
+
+namespace SpeedLimitField
+{
+
+std::string const SpeedBps = "speed-Bps";
+std::string const UseGlobalSpeedLimit = "use-global-speed-limit";
+std::string const UseSpeedLimit = "use-speed-limit";
+
+} // namespace SpeedLimitField
+
+} // namespace ResumeField
 
 enum Priority
 {
@@ -74,7 +120,7 @@ fs::path GetTorrentFilePath(fs::path const& dataDir, std::string const& basename
     return GetTorrentsDir(dataDir) / (basename + ".torrent");
 }
 
-} // namespace Transmission
+} // namespace Detail
 
 namespace
 {
@@ -94,7 +140,7 @@ Json::Value ToStorePriority(std::vector<Box::FileInfo> const& files)
     Json::Value result = Json::arrayValue;
     for (Box::FileInfo const& file : files)
     {
-        result.append(BoxHelper::Priority::ToStore(file.Priority, Transmission::MinPriority, Transmission::MaxPriority));
+        result.append(BoxHelper::Priority::ToStore(file.Priority, Detail::MinPriority, Detail::MaxPriority));
     }
     return result;
 }
@@ -102,21 +148,23 @@ Json::Value ToStorePriority(std::vector<Box::FileInfo> const& files)
 Json::Value ToStoreProgress(std::vector<bool> const& validBlocks, std::uint32_t blockSize, std::uint64_t totalSize,
     std::size_t fileCount)
 {
+    namespace RPField = Detail::ResumeField::ProgressField;
+
     std::size_t const validBlockCount = std::count(validBlocks.begin(), validBlocks.end(), true);
 
     Json::Value result;
     if (validBlockCount == validBlocks.size())
     {
-        result["blocks"] = "all";
-        result["have"] = "all";
+        result[RPField::Blocks] = "all";
+        result[RPField::Have] = "all";
     }
     else if (validBlockCount == 0)
     {
-        result["blocks"] = "none";
+        result[RPField::Blocks] = "none";
     }
     else
     {
-        std::uint32_t const trBlocksPerBlock = blockSize / Transmission::BlockSize;
+        std::uint32_t const trBlocksPerBlock = blockSize / Detail::BlockSize;
 
         std::string trBlocks;
         trBlocks.reserve((validBlocks.size() * trBlocksPerBlock + 7) / 8);
@@ -142,16 +190,16 @@ Json::Value ToStoreProgress(std::vector<bool> const& validBlocks, std::uint32_t 
             trBlocks += static_cast<char>(blockPack);
         }
 
-        trBlocks.resize(((totalSize + Transmission::BlockSize - 1) / Transmission::BlockSize + 7) / 8);
+        trBlocks.resize(((totalSize + Detail::BlockSize - 1) / Detail::BlockSize + 7) / 8);
 
-        result["blocks"] = trBlocks;
+        result[RPField::Blocks] = trBlocks;
     }
 
     Json::Int64 const timeChecked = std::time(nullptr);
-    result["time-checked"] = Json::arrayValue;
+    result[RPField::TimeChecked] = Json::arrayValue;
     for (std::size_t i = 0; i < fileCount; ++i)
     {
-        result["time-checked"].append(timeChecked);
+        result[RPField::TimeChecked].append(timeChecked);
     }
 
     return result;
@@ -159,28 +207,35 @@ Json::Value ToStoreProgress(std::vector<bool> const& validBlocks, std::uint32_t 
 
 Json::Value ToStoreRatioLimit(Box::LimitInfo const& boxLimit)
 {
+    namespace RRLField = Detail::ResumeField::RatioLimitField;
+
     Json::Value result;
-    result["ratio-mode"] = boxLimit.Mode == Box::LimitMode::Inherit ? 0 : (boxLimit.Mode == Box::LimitMode::Enabled ? 1 : 2);
-    result["ratio-limit"] = boost::str(boost::format("%.06f") % boxLimit.Value);
+    result[RRLField::RatioMode] = boxLimit.Mode == Box::LimitMode::Inherit ? 0 :
+        (boxLimit.Mode == Box::LimitMode::Enabled ? 1 : 2);
+    result[RRLField::RatioLimit] = boost::str(boost::format("%.06f") % boxLimit.Value);
     return result;
 }
 
 Json::Value ToStoreSpeedLimit(Box::LimitInfo const& boxLimit)
 {
+    namespace RSLField = Detail::ResumeField::SpeedLimitField;
+
     Json::Value result;
-    result["speed-Bps"] = static_cast<int>(boxLimit.Value);
-    result["use-global-speed-limit"] = boxLimit.Mode != Box::LimitMode::Disabled ? 1 : 0;
-    result["use-speed-limit"] = boxLimit.Mode == Box::LimitMode::Enabled ? 1 : 0;
+    result[RSLField::SpeedBps] = static_cast<int>(boxLimit.Value);
+    result[RSLField::UseGlobalSpeedLimit] = boxLimit.Mode != Box::LimitMode::Disabled ? 1 : 0;
+    result[RSLField::UseSpeedLimit] = boxLimit.Mode == Box::LimitMode::Enabled ? 1 : 0;
     return result;
 }
 
 void ImportImpl(fs::path const& dataDir, ITorrentStateIterator& boxes, IFileStreamProvider& fileStreamProvider)
 {
+    namespace RField = Detail::ResumeField;
+
     BencodeCodec const bencoder;
     Box box;
     while (boxes.GetNext(box))
     {
-        if (box.BlockSize % Transmission::BlockSize != 0)
+        if (box.BlockSize % Detail::BlockSize != 0)
         {
             // Transmission doesn't support piece lengths which are not power of two (see trac #4005)
             continue;
@@ -189,38 +244,38 @@ void ImportImpl(fs::path const& dataDir, ITorrentStateIterator& boxes, IFileStre
         Json::Value resume;
 
         //resume["activity-date"] = 0;
-        resume["added-date"] = static_cast<Json::Int64>(box.AddedAt);
+        resume[RField::AddedDate] = static_cast<Json::Int64>(box.AddedAt);
         //resume["bandwidth-priority"] = 0;
-        resume["corrupt"] = static_cast<Json::UInt64>(box.CorruptedSize);
-        resume["destination"] = box.SavePath;
-        resume["dnd"] = ToStoreDoNotDownload(box.Files);
-        resume["done-date"] = static_cast<Json::Int64>(box.CompletedAt);
-        resume["downloaded"] = static_cast<Json::UInt64>(box.DownloadedSize);
+        resume[RField::Corrupt] = static_cast<Json::UInt64>(box.CorruptedSize);
+        resume[RField::Destination] = box.SavePath;
+        resume[RField::Dnd] = ToStoreDoNotDownload(box.Files);
+        resume[RField::DoneDate] = static_cast<Json::Int64>(box.CompletedAt);
+        resume[RField::Downloaded] = static_cast<Json::UInt64>(box.DownloadedSize);
         //resume["downloading-time-seconds"] = 0;
         //resume["idle-limit"] = Json::objectValue;
         //resume["max-peers"] = 5;
-        resume["name"] = box.Torrent["info"]["name"];
-        resume["paused"] = box.IsPaused ? 1 : 0;
+        resume[RField::Name] = box.Torrent["info"]["name"];
+        resume[RField::Paused] = box.IsPaused ? 1 : 0;
         //resume["peers2"] = "";
-        resume["priority"] = ToStorePriority(box.Files);
-        resume["progress"] = ToStoreProgress(box.ValidBlocks, box.BlockSize, Util::GetTotalTorrentSize(box.Torrent),
+        resume[RField::Priority] = ToStorePriority(box.Files);
+        resume[RField::Progress] = ToStoreProgress(box.ValidBlocks, box.BlockSize, Util::GetTotalTorrentSize(box.Torrent),
             box.Files.size());
-        resume["ratio-limit"] = ToStoreRatioLimit(box.RatioLimit);
+        resume[RField::RatioLimit] = ToStoreRatioLimit(box.RatioLimit);
         //resume["seeding-time-seconds"] = 0;
-        resume["speed-limit-down"] = ToStoreSpeedLimit(box.DownloadSpeedLimit);
-        resume["speed-limit-up"] = ToStoreSpeedLimit(box.UploadSpeedLimit);
-        resume["uploaded"] = static_cast<Json::UInt64>(box.UploadedSize);
+        resume[RField::SpeedLimitDown] = ToStoreSpeedLimit(box.DownloadSpeedLimit);
+        resume[RField::SpeedLimitUp] = ToStoreSpeedLimit(box.UploadSpeedLimit);
+        resume[RField::Uploaded] = static_cast<Json::UInt64>(box.UploadedSize);
 
-        std::string const baseName = resume["name"].asString() + '.' + box.InfoHash.substr(0, 16);
+        std::string const baseName = resume[RField::Name].asString() + '.' + box.InfoHash.substr(0, 16);
 
         try
         {
             WriteStreamPtr stream;
 
-            stream = fileStreamProvider.GetWriteStream(Transmission::GetTorrentFilePath(dataDir, baseName));
+            stream = fileStreamProvider.GetWriteStream(Detail::GetTorrentFilePath(dataDir, baseName));
             bencoder.Encode(*stream, box.Torrent);
 
-            stream = fileStreamProvider.GetWriteStream(Transmission::GetResumeFilePath(dataDir, baseName));
+            stream = fileStreamProvider.GetWriteStream(Detail::GetResumeFilePath(dataDir, baseName));
             bencoder.Encode(*stream, resume);
         }
         catch (std::exception const& e)
@@ -253,14 +308,14 @@ fs::path TransmissionStateStore::GuessDataDir(Intention::Enum intention) const
 
     fs::path const homeDir = std::getenv("HOME");
 
-    if (IsValidDataDir(homeDir / ".config" / Transmission::CommonDataDirName, intention))
+    if (IsValidDataDir(homeDir / ".config" / Detail::CommonDataDirName, intention))
     {
-        return homeDir / ".config" / Transmission::CommonDataDirName;
+        return homeDir / ".config" / Detail::CommonDataDirName;
     }
 
-    if (IsValidDataDir(homeDir / ".config" / Transmission::DaemonDataDirName, intention))
+    if (IsValidDataDir(homeDir / ".config" / Detail::DaemonDataDirName, intention))
     {
-        return homeDir / ".config" / Transmission::DaemonDataDirName;
+        return homeDir / ".config" / Detail::DaemonDataDirName;
     }
 
     return fs::path();
@@ -275,8 +330,8 @@ fs::path TransmissionStateStore::GuessDataDir(Intention::Enum intention) const
 bool TransmissionStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum /*intention*/) const
 {
     return
-        fs::is_directory(Transmission::GetResumeDir(dataDir)) &&
-        fs::is_directory(Transmission::GetTorrentsDir(dataDir));
+        fs::is_directory(Detail::GetResumeDir(dataDir)) &&
+        fs::is_directory(Detail::GetTorrentsDir(dataDir));
 }
 
 ITorrentStateIteratorPtr TransmissionStateStore::Export(fs::path const& dataDir,

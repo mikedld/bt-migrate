@@ -37,8 +37,34 @@
 namespace fs = boost::filesystem;
 namespace pt = boost::property_tree;
 
-namespace rTorrent
+namespace Detail
 {
+
+namespace ResumeField
+{
+
+std::string const Bitfield = "bitfield";
+std::string const Files = "files";
+
+namespace FilesField
+{
+
+std::string const Priority = "priority";
+
+} // namespace FilesField
+
+} // namespace ResumeField
+
+namespace StateField
+{
+
+std::string const Directory = "directory";
+std::string const Priority = "priority";
+std::string const TimestampFinished = "timestamp.finished";
+std::string const TimestampStarted = "timestamp.started";
+std::string const TotalUploaded = "total_uploaded";
+
+} // namespace StateField
 
 enum Priority
 {
@@ -51,7 +77,7 @@ std::string const ConfigFilename = ".rtorrent.rc";
 std::string const StateFileExtension = ".rtorrent";
 std::string const LibTorrentStateFileExtension = ".libtorrent_resume";
 
-} // namespace rTorrent
+} // namespace Detail
 
 namespace
 {
@@ -88,13 +114,16 @@ rTorrentTorrentStateIterator::rTorrentTorrentStateIterator(fs::path const& dataD
 
 bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
 {
+    namespace RField = Detail::ResumeField;
+    namespace SField = Detail::StateField;
+
     std::unique_lock<std::mutex> lock(m_directoryItMutex);
 
     fs::path stateFilePath;
     while (m_directoryIt != m_directoryEnd)
     {
         fs::path const& path = m_directoryIt->path();
-        if (path.extension() == rTorrent::StateFileExtension && m_directoryIt->status().type() == fs::regular_file)
+        if (path.extension() == Detail::StateFileExtension && m_directoryIt->status().type() == fs::regular_file)
         {
             stateFilePath = path;
             break;
@@ -113,7 +142,7 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
     lock.unlock();
 
     fs::path libTorrentStateFilePath = stateFilePath;
-    libTorrentStateFilePath.replace_extension(rTorrent::LibTorrentStateFileExtension);
+    libTorrentStateFilePath.replace_extension(Detail::LibTorrentStateFileExtension);
 
     Box box;
 
@@ -143,29 +172,31 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
         m_bencoder.Decode(*stream, resume);
     }
 
-    box.AddedAt = state["timestamp.started"].asInt();
-    box.CompletedAt = state["timestamp.finished"].asInt();
-    box.IsPaused = state["priority"].asInt() == 0;
-    box.UploadedSize = state["total_uploaded"].asUInt64();
-    box.SavePath = Util::GetPath(state["directory"].asString()).parent_path().string();
+    box.AddedAt = state[SField::TimestampStarted].asInt();
+    box.CompletedAt = state[SField::TimestampFinished].asInt();
+    box.IsPaused = state[SField::Priority].asInt() == 0;
+    box.UploadedSize = state[SField::TotalUploaded].asUInt64();
+    box.SavePath = Util::GetPath(state[SField::Directory].asString()).parent_path().string();
     box.BlockSize = box.Torrent["info"]["piece length"].asUInt();
 
-    box.Files.reserve(resume["files"].size());
-    for (Json::Value const& file : resume["files"])
+    box.Files.reserve(resume[RField::Files].size());
+    for (Json::Value const& file : resume[RField::Files])
     {
-        int const filePriority = file["priority"].asInt();
+        namespace ff = Detail::ResumeField::FilesField;
+
+        int const filePriority = file[ff::Priority].asInt();
 
         Box::FileInfo boxFile;
-        boxFile.DoNotDownload = filePriority == rTorrent::DoNotDownloadPriority;
+        boxFile.DoNotDownload = filePriority == Detail::DoNotDownloadPriority;
         boxFile.Priority = boxFile.DoNotDownload ? Box::NormalPriority : BoxHelper::Priority::FromStore(filePriority - 1,
-            rTorrent::MinPriority, rTorrent::MaxPriority);
+            Detail::MinPriority, Detail::MaxPriority);
         box.Files.push_back(std::move(boxFile));
     }
 
     std::uint64_t const totalSize = Util::GetTotalTorrentSize(box.Torrent);
     std::uint64_t const totalBlockCount = (totalSize + box.BlockSize - 1) / box.BlockSize;
     box.ValidBlocks.reserve(totalBlockCount + 8);
-    for (unsigned char const c : resume["bitfield"].asString())
+    for (unsigned char const c : resume[RField::Bitfield].asString())
     {
         for (int i = 7; i >= 0; --i)
         {
@@ -203,14 +234,14 @@ fs::path rTorrentStateStore::GuessDataDir(Intention::Enum intention) const
 
     fs::path const homeDir = std::getenv("HOME");
 
-    if (!fs::is_regular_file(homeDir / rTorrent::ConfigFilename))
+    if (!fs::is_regular_file(homeDir / Detail::ConfigFilename))
     {
         return fs::path();
     }
 
     pt::ptree config;
     {
-        fs::ifstream stream(homeDir / rTorrent::ConfigFilename, std::ios_base::in);
+        fs::ifstream stream(homeDir / Detail::ConfigFilename, std::ios_base::in);
         pt::ini_parser::read_ini(stream, config);
     }
 
@@ -239,12 +270,12 @@ bool rTorrentStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum
     for (fs::directory_iterator it(dataDir), end; it != end; ++it)
     {
         fs::path path = it->path();
-        if (path.extension() != rTorrent::StateFileExtension || it->status().type() != fs::regular_file)
+        if (path.extension() != Detail::StateFileExtension || it->status().type() != fs::regular_file)
         {
             continue;
         }
 
-        if (!fs::is_regular_file(path.replace_extension(rTorrent::LibTorrentStateFileExtension)))
+        if (!fs::is_regular_file(path.replace_extension(Detail::LibTorrentStateFileExtension)))
         {
             continue;
         }

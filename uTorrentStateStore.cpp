@@ -36,8 +36,27 @@
 
 namespace fs = boost::filesystem;
 
-namespace uTorrent
+namespace Detail
 {
+
+namespace ResumeField
+{
+
+std::string const AddedOn = "added_on";
+std::string const CompletedOn = "completed_on";
+std::string const Corrupt = "corrupt";
+std::string const Downloaded = "downloaded";
+std::string const DownSpeed = "downspeed";
+std::string const Have = "have";
+std::string const OverrideSeedSettings = "override_seedsettings";
+std::string const Path = "path";
+std::string const Prio = "prio";
+std::string const Started = "started";
+std::string const Uploaded = "uploaded";
+std::string const UpSpeed = "upspeed";
+std::string const WantedRatio = "wanted_ratio";
+
+} // namespace ResumeField
 
 enum Priority
 {
@@ -55,7 +74,7 @@ enum TorrentState
 
 std::string const ResumeFilename = "resume.dat";
 
-} // namespace uTorrent
+} // namespace Detail
 
 namespace
 {
@@ -112,6 +131,8 @@ uTorrentTorrentStateIterator::uTorrentTorrentStateIterator(fs::path const& dataD
 
 bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
 {
+    namespace RField = Detail::ResumeField;
+
     std::unique_lock<std::mutex> lock(m_torrentItMutex);
 
     fs::path torrentFilename;
@@ -145,35 +166,36 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
         BoxHelper::LoadTorrent(*stream, box);
     }
 
-    box.AddedAt = resume["added_on"].asInt();
-    box.CompletedAt = resume["completed_on"].asInt();
-    box.IsPaused = resume["started"].asInt() == uTorrent::PausedState || resume["started"].asInt() == uTorrent::StoppedState;
-    box.DownloadedSize = resume["downloaded"].asUInt64();
-    box.UploadedSize = resume["uploaded"].asUInt64();
-    box.CorruptedSize = resume["corrupt"].asUInt64();
-    box.SavePath = Util::GetPath(resume["path"].asString()).parent_path().string();
+    box.AddedAt = resume[RField::AddedOn].asInt();
+    box.CompletedAt = resume[RField::CompletedOn].asInt();
+    box.IsPaused = resume[RField::Started].asInt() == Detail::PausedState ||
+        resume[RField::Started].asInt() == Detail::StoppedState;
+    box.DownloadedSize = resume[RField::Downloaded].asUInt64();
+    box.UploadedSize = resume[RField::Uploaded].asUInt64();
+    box.CorruptedSize = resume[RField::Corrupt].asUInt64();
+    box.SavePath = Util::GetPath(resume[RField::Path].asString()).parent_path().string();
     box.BlockSize = box.Torrent["info"]["piece length"].asUInt();
-    box.RatioLimit = FromStoreRatioLimit(resume["override_seedsettings"], resume["wanted_ratio"]);
-    box.DownloadSpeedLimit = FromStoreSpeedLimit(resume["downspeed"]);
-    box.UploadSpeedLimit = FromStoreSpeedLimit(resume["upspeed"]);
+    box.RatioLimit = FromStoreRatioLimit(resume[RField::OverrideSeedSettings], resume[RField::WantedRatio]);
+    box.DownloadSpeedLimit = FromStoreSpeedLimit(resume[RField::DownSpeed]);
+    box.UploadSpeedLimit = FromStoreSpeedLimit(resume[RField::UpSpeed]);
 
-    std::string const filePriorities = resume["prio"].asString();
+    std::string const filePriorities = resume[RField::Prio].asString();
     box.Files.reserve(filePriorities.size());
     for (std::size_t i = 0; i < filePriorities.size(); ++i)
     {
         int const filePriority = filePriorities[i];
 
         Box::FileInfo file;
-        file.DoNotDownload = filePriority == uTorrent::DoNotDownloadPriority;
+        file.DoNotDownload = filePriority == Detail::DoNotDownloadPriority;
         file.Priority = file.DoNotDownload ? Box::NormalPriority : BoxHelper::Priority::FromStore(filePriority,
-            uTorrent::MinPriority, uTorrent::MaxPriority);
+            Detail::MinPriority, Detail::MaxPriority);
         box.Files.push_back(std::move(file));
     }
 
     std::uint64_t const totalSize = Util::GetTotalTorrentSize(box.Torrent);
     std::uint64_t const totalBlockCount = (totalSize + box.BlockSize - 1) / box.BlockSize;
     box.ValidBlocks.reserve(totalBlockCount + 8);
-    for (unsigned char const c : resume["have"].asString())
+    for (unsigned char const c : resume[RField::Have].asString())
     {
         for (int i = 0; i < 8; ++i)
         {
@@ -212,7 +234,7 @@ fs::path uTorrentStateStore::GuessDataDir(Intention::Enum /*intention*/) const
 
 bool uTorrentStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum /*intention*/) const
 {
-    return fs::is_regular_file(dataDir / uTorrent::ResumeFilename);
+    return fs::is_regular_file(dataDir / Detail::ResumeFilename);
 }
 
 ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider) const
@@ -224,7 +246,7 @@ ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& dataDir, IFi
 
     JsonValuePtr resume(new Json::Value());
     {
-        ReadStreamPtr const stream = fileStreamProvider.GetReadStream(dataDir / uTorrent::ResumeFilename);
+        ReadStreamPtr const stream = fileStreamProvider.GetReadStream(dataDir / Detail::ResumeFilename);
         BencodeCodec().Decode(*stream, *resume);
     }
 

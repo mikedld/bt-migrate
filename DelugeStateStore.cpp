@@ -39,8 +39,40 @@
 
 namespace fs = boost::filesystem;
 
-namespace Deluge
+namespace Detail
 {
+
+namespace FastResumeField
+{
+
+std::string const AddedTime = "added_time";
+std::string const CompletedTime = "completed_time";
+std::string const Pieces = "pieces";
+std::string const TotalDownloaded = "total_downloaded";
+std::string const TotalUploaded = "total_uploaded";
+
+} // namespace FastResumeField
+
+namespace StateField
+{
+
+std::string const Torrents = "torrents";
+
+namespace TorrentField
+{
+
+std::string const FilePriorities = "file_priorities";
+std::string const MaxDownloadSpeed = "max_download_speed";
+std::string const MaxUploadSpeed = "max_upload_speed";
+std::string const Paused = "paused";
+std::string const SavePath = "save_path";
+std::string const StopAtRatio = "stop_at_ratio";
+std::string const StopRatio = "stop_ratio";
+std::string const TorrentId = "torrent_id";
+
+} // namespace TorrentField
+
+} // namespace StateField
 
 enum Priority
 {
@@ -58,7 +90,7 @@ fs::path GetStateDir(fs::path const& dataDir)
     return dataDir / "state";
 }
 
-} // namespace Deluge
+} // namespace Detail
 
 namespace
 {
@@ -109,8 +141,8 @@ DelugeTorrentStateIterator::DelugeTorrentStateIterator(fs::path const& stateDir,
     m_fastResume(std::move(fastResume)),
     m_state(std::move(state)),
     m_fileStreamProvider(fileStreamProvider),
-    m_stateIt((*m_state)["torrents"].begin()),
-    m_stateEnd((*m_state)["torrents"].end()),
+    m_stateIt((*m_state)[Detail::StateField::Torrents].begin()),
+    m_stateEnd((*m_state)[Detail::StateField::Torrents].end()),
     m_stateItMutex(),
     m_bencoder()
 {
@@ -119,6 +151,9 @@ DelugeTorrentStateIterator::DelugeTorrentStateIterator(fs::path const& stateDir,
 
 bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
 {
+    namespace FRField = Detail::FastResumeField;
+    namespace STField = Detail::StateField::TorrentField;
+
     std::unique_lock<std::mutex> lock(m_stateItMutex);
 
     if (m_stateIt == m_stateEnd)
@@ -130,7 +165,7 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
 
     lock.unlock();
 
-    std::string const infoHash = state["torrent_id"].asString();
+    std::string const infoHash = state[STField::TorrentId].asString();
 
     Json::Value fastResume;
     {
@@ -150,35 +185,35 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
         Throw<Exception>() << "Info hashes don't match: " << box.InfoHash << " vs. " << infoHash;
     }
 
-    box.AddedAt = fastResume["added_time"].asUInt();
-    box.CompletedAt = fastResume["completed_time"].asUInt();
-    box.IsPaused = state["paused"].asBool();
-    box.DownloadedSize = fastResume["total_downloaded"].asUInt64();
-    box.UploadedSize = fastResume["total_uploaded"].asUInt64();
+    box.AddedAt = fastResume[FRField::AddedTime].asUInt();
+    box.CompletedAt = fastResume[FRField::CompletedTime].asUInt();
+    box.IsPaused = state[STField::Paused].asBool();
+    box.DownloadedSize = fastResume[FRField::TotalDownloaded].asUInt64();
+    box.UploadedSize = fastResume[FRField::TotalUploaded].asUInt64();
     box.CorruptedSize = 0;
-    box.SavePath = Util::GetPath(state["save_path"].asString()).string();
+    box.SavePath = Util::GetPath(state[STField::SavePath].asString()).string();
     box.BlockSize = box.Torrent["info"]["piece length"].asUInt();
-    box.RatioLimit = FromStoreRatioLimit(state["stop_at_ratio"], state["stop_ratio"]);
-    box.DownloadSpeedLimit = FromStoreSpeedLimit(state["max_download_speed"]);
-    box.UploadSpeedLimit = FromStoreSpeedLimit(state["max_upload_speed"]);
+    box.RatioLimit = FromStoreRatioLimit(state[STField::StopAtRatio], state[STField::StopRatio]);
+    box.DownloadSpeedLimit = FromStoreSpeedLimit(state[STField::MaxDownloadSpeed]);
+    box.UploadSpeedLimit = FromStoreSpeedLimit(state[STField::MaxUploadSpeed]);
 
-    Json::Value const& filePriorities = state["file_priorities"];
+    Json::Value const& filePriorities = state[STField::FilePriorities];
     box.Files.reserve(filePriorities.size());
     for (Json::ArrayIndex i = 0; i < filePriorities.size(); ++i)
     {
         int const filePriority = filePriorities[i].asInt();
 
         Box::FileInfo file;
-        file.DoNotDownload = filePriority == Deluge::DoNotDownloadPriority;
+        file.DoNotDownload = filePriority == Detail::DoNotDownloadPriority;
         file.Priority = file.DoNotDownload ? Box::NormalPriority : BoxHelper::Priority::FromStore(filePriority - 1,
-            Deluge::MinPriority, Deluge::MaxPriority);
+            Detail::MinPriority, Detail::MaxPriority);
         box.Files.push_back(std::move(file));
     }
 
     std::uint64_t const totalSize = Util::GetTotalTorrentSize(box.Torrent);
     std::uint64_t const totalBlockCount = (totalSize + box.BlockSize - 1) / box.BlockSize;
     box.ValidBlocks.reserve(totalBlockCount);
-    for (bool const isPieceValid : fastResume["pieces"].asString())
+    for (bool const isPieceValid : fastResume[FRField::Pieces].asString())
     {
         box.ValidBlocks.push_back(isPieceValid);
     }
@@ -210,9 +245,9 @@ fs::path DelugeStateStore::GuessDataDir(Intention::Enum intention) const
 
     fs::path const homeDir = std::getenv("HOME");
 
-    if (IsValidDataDir(homeDir / ".config" / Deluge::DataDirName, intention))
+    if (IsValidDataDir(homeDir / ".config" / Detail::DataDirName, intention))
     {
-        return homeDir / ".config" / Deluge::DataDirName;
+        return homeDir / ".config" / Detail::DataDirName;
     }
 
     return fs::path();
@@ -221,9 +256,9 @@ fs::path DelugeStateStore::GuessDataDir(Intention::Enum intention) const
 
     fs::path const appDataDir = std::getenv("APPDATA");
 
-    if (IsValidDataDir(appDataDir / Deluge::DataDirName, intention))
+    if (IsValidDataDir(appDataDir / Detail::DataDirName, intention))
     {
-        return appDataDir / Deluge::DataDirName;
+        return appDataDir / Detail::DataDirName;
     }
 
     return fs::path();
@@ -233,10 +268,10 @@ fs::path DelugeStateStore::GuessDataDir(Intention::Enum intention) const
 
 bool DelugeStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum /*intention*/) const
 {
-    fs::path const stateDir = Deluge::GetStateDir(dataDir);
+    fs::path const stateDir = Detail::GetStateDir(dataDir);
     return
-        fs::is_regular_file(stateDir / Deluge::FastResumeFilename) &&
-        fs::is_regular_file(stateDir / Deluge::StateFilename);
+        fs::is_regular_file(stateDir / Detail::FastResumeFilename) &&
+        fs::is_regular_file(stateDir / Detail::StateFilename);
 }
 
 ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider) const
@@ -246,17 +281,17 @@ ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFile
         Throw<Exception>() << "Bad Deluge data directory: " << dataDir;
     }
 
-    fs::path const stateDir = Deluge::GetStateDir(dataDir);
+    fs::path const stateDir = Detail::GetStateDir(dataDir);
 
     JsonValuePtr fastResume(new Json::Value());
     {
-        ReadStreamPtr const stream = fileStreamProvider.GetReadStream(stateDir / Deluge::FastResumeFilename);
+        ReadStreamPtr const stream = fileStreamProvider.GetReadStream(stateDir / Detail::FastResumeFilename);
         BencodeCodec().Decode(*stream, *fastResume);
     }
 
     JsonValuePtr state(new Json::Value());
     {
-        ReadStreamPtr const stream = fileStreamProvider.GetReadStream(stateDir / Deluge::StateFilename);
+        ReadStreamPtr const stream = fileStreamProvider.GetReadStream(stateDir / Detail::StateFilename);
         PickleCodec().Decode(*stream, *state);
     }
 
