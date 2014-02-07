@@ -31,3 +31,9 @@ char const* Exception::what() const throw()
 {
     return m_message.c_str();
 }
+
+NotImplementedException::NotImplementedException(std::string const& place) :
+    Exception("Not implemented: " + place)
+{
+    //
+}

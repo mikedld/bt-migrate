@@ -243,7 +243,7 @@ ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFile
 {
     if (!IsValidDataDir(dataDir, Intention::Export))
     {
-        Throw<Exception>() << "Bad Deluge configuration directory: " << dataDir;
+        Throw<Exception>() << "Bad Deluge data directory: " << dataDir;
     }
 
     fs::path const stateDir = Deluge::GetStateDir(dataDir);
@@ -269,7 +269,7 @@ void DelugeStateStore::Import(fs::path const& dataDir, ITorrentStateIteratorPtr 
 {
     if (!IsValidDataDir(dataDir, Intention::Import))
     {
-        Throw<Exception>() << "Bad Deluge configuration directory: " << dataDir;
+        Throw<Exception>() << "Bad Deluge data directory: " << dataDir;
     }
 
     throw NotImplementedException(__func__);

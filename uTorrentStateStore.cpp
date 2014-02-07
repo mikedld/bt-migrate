@@ -219,7 +219,7 @@ ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& dataDir, IFi
 {
     if (!IsValidDataDir(dataDir, Intention::Export))
     {
-        Throw<Exception>() << "Bad uTorrent configuration directory: " << dataDir;
+        Throw<Exception>() << "Bad uTorrent data directory: " << dataDir;
     }
 
     JsonValuePtr resume(new Json::Value());
@@ -236,7 +236,7 @@ void uTorrentStateStore::Import(fs::path const& dataDir, ITorrentStateIteratorPt
 {
     if (!IsValidDataDir(dataDir, Intention::Import))
     {
-        Throw<Exception>() << "Bad uTorrent configuration directory: " << dataDir;
+        Throw<Exception>() << "Bad uTorrent data directory: " << dataDir;
     }
 
     throw NotImplementedException(__func__);

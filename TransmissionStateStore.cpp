@@ -284,7 +284,7 @@ ITorrentStateIteratorPtr TransmissionStateStore::Export(fs::path const& dataDir,
 {
     if (!IsValidDataDir(dataDir, Intention::Export))
     {
-        Throw<Exception>() << "Bad Transmission configuration directory: " << dataDir;
+        Throw<Exception>() << "Bad Transmission data directory: " << dataDir;
     }
 
     throw NotImplementedException(__func__);
@@ -295,7 +295,7 @@ void TransmissionStateStore::Import(fs::path const& dataDir, ITorrentStateIterat
 {
     if (!IsValidDataDir(dataDir, Intention::Import))
     {
-        Throw<Exception>() << "Bad Transmission configuration directory: " << dataDir;
+        Throw<Exception>() << "Bad Transmission data directory: " << dataDir;
     }
 
     unsigned int const threadCount = std::max(1u, std::thread::hardware_concurrency());

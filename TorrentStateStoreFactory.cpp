@@ -58,7 +58,7 @@ ITorrentStateStorePtr TorrentStateStoreFactory::GuessByDataDir(fs::path const& d
         {
             if (result != nullptr)
             {
-                throw Exception("More than one torrent client matched configuration directory");
+                throw Exception("More than one torrent client matched data directory");
             }
 
             result = std::move(store);
@@ -67,7 +67,7 @@ ITorrentStateStorePtr TorrentStateStoreFactory::GuessByDataDir(fs::path const& d
 
     if (result == nullptr)
     {
-        throw Exception("No torrent client matched configuration directory");
+        throw Exception("No torrent client matched data directory");
     }
 
     return std::move(result);

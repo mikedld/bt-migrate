@@ -66,7 +66,7 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
             clientDataDir = result->GuessDataDir(intention);
             if (clientDataDir.empty())
             {
-                Throw<Exception>() << "No configuration directory found for " << (intention == Intention::Export ? "source" :
+                Throw<Exception>() << "No data directory found for " << (intention == Intention::Export ? "source" :
                     "target") << " torrent client";
             }
         }
@@ -78,7 +78,7 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
     else
     {
         Throw<Exception>() << (intention == Intention::Export ? "Source" : "Target") <<
-            " torrent client name and/or configuration directory are not specified";
+            " torrent client name and/or data directory are not specified";
     }
 
     clientName = TorrentClient::ToString(result->GetTorrentClient());
@@ -115,10 +115,10 @@ int main(int argc, char* argv[])
         po::options_description mainOptions("Main options");
         mainOptions.add_options()
             ("source", po::value<std::string>(&sourceName)->value_name("name"), "source client name")
-            ("source-dir", po::value<fs::path>(&sourceDir)->value_name("path"), "source client configuration directory")
+            ("source-dir", po::value<fs::path>(&sourceDir)->value_name("path"), "source client data directory")
             ("target", po::value<std::string>(&targetName)->value_name("name"), "target client name")
-            ("target-dir", po::value<fs::path>(&targetDir)->value_name("path"), "target client configuration directory")
-            ("no-backup", po::bool_switch(&noBackup), "do not backup target client configuration directory")
+            ("target-dir", po::value<fs::path>(&targetDir)->value_name("path"), "target client data directory")
+            ("no-backup", po::bool_switch(&noBackup), "do not backup target client data directory")
             ("dry-run", po::bool_switch(&dryRun), "do not write anything to disk");
 
         po::options_description otherOptions("Other options");

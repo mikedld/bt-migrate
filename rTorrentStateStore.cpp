@@ -264,7 +264,7 @@ ITorrentStateIteratorPtr rTorrentStateStore::Export(fs::path const& dataDir, IFi
 {
     if (!IsValidDataDir(dataDir, Intention::Export))
     {
-        Throw<Exception>() << "Bad rTorrent configuration directory: " << dataDir;
+        Throw<Exception>() << "Bad rTorrent data directory: " << dataDir;
     }
 
     return ITorrentStateIteratorPtr(new rTorrentTorrentStateIterator(dataDir, fileStreamProvider));
@@ -275,7 +275,7 @@ void rTorrentStateStore::Import(fs::path const& dataDir, ITorrentStateIteratorPt
 {
     if (!IsValidDataDir(dataDir, Intention::Import))
     {
-        Throw<Exception>() << "Bad rTorrent configuration directory: " << dataDir;
+        Throw<Exception>() << "Bad rTorrent data directory: " << dataDir;
     }
 
     throw NotImplementedException(__func__);

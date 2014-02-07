@@ -36,9 +36,5 @@ private:
 class NotImplementedException : public Exception
 {
 public:
-    NotImplementedException(std::string const& place) :
-        Exception("Not implemented: " + place)
-    {
-        //
-    }
+    NotImplementedException(std::string const& place);
 };
