@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 
@@ -34,5 +35,6 @@ std::string CalculateSha1(std::string const& data);
 std::string BinaryToHex(std::string const& data);
 
 std::uint64_t GetTotalTorrentSize(Json::Value const& torrent);
+boost::filesystem::path GetFilePath(Json::Value const& torrent, std::size_t fileIndex);
 
 } // namespace Util

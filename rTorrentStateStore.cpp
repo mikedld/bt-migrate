@@ -176,7 +176,7 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
     box.CompletedAt = state[SField::TimestampFinished].asInt();
     box.IsPaused = state[SField::Priority].asInt() == 0;
     box.UploadedSize = state[SField::TotalUploaded].asUInt64();
-    box.SavePath = Util::GetPath(state[SField::Directory].asString()).parent_path().string();
+    box.SavePath = Util::GetPath(state[SField::Directory].asString());
     box.BlockSize = box.Torrent["info"]["piece length"].asUInt();
 
     box.Files.reserve(resume[RField::Files].size());

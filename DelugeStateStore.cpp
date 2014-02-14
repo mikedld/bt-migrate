@@ -47,6 +47,7 @@ namespace FastResumeField
 
 std::string const AddedTime = "added_time";
 std::string const CompletedTime = "completed_time";
+std::string const MappedFiles = "mapped_files";
 std::string const Pieces = "pieces";
 std::string const TotalDownloaded = "total_downloaded";
 std::string const TotalUploaded = "total_uploaded";
@@ -111,6 +112,23 @@ Box::LimitInfo FromStoreSpeedLimit(Json::Value const& storeLimit)
     result.Mode = storeLimit.asInt() > 0 ? Box::LimitMode::Enabled :
         (storeLimit.asInt() == 0 ? Box::LimitMode::Disabled : Box::LimitMode::Inherit);
     result.Value = std::max(0, storeLimit.asInt() * 1000);
+    return result;
+}
+
+fs::path GetChangedFilePath(Json::Value const& mappedFiles, Json::ArrayIndex index)
+{
+    fs::path result;
+
+    if (!mappedFiles.isNull())
+    {
+        fs::path const path = Util::GetPath(mappedFiles[index].asString());
+        fs::path::iterator pathIt = path.begin();
+        while (++pathIt != path.end())
+        {
+            result /= *pathIt;
+        }
+    }
+
     return result;
 }
 
@@ -191,22 +209,27 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
     box.DownloadedSize = fastResume[FRField::TotalDownloaded].asUInt64();
     box.UploadedSize = fastResume[FRField::TotalUploaded].asUInt64();
     box.CorruptedSize = 0;
-    box.SavePath = Util::GetPath(state[STField::SavePath].asString()).string();
+    box.SavePath = Util::GetPath(state[STField::SavePath].asString()) / (fastResume.isMember(FRField::MappedFiles) ?
+        *Util::GetPath(fastResume[FRField::MappedFiles][0].asString()).begin() : box.Torrent["name"].asString());
     box.BlockSize = box.Torrent["info"]["piece length"].asUInt();
     box.RatioLimit = FromStoreRatioLimit(state[STField::StopAtRatio], state[STField::StopRatio]);
     box.DownloadSpeedLimit = FromStoreSpeedLimit(state[STField::MaxDownloadSpeed]);
     box.UploadSpeedLimit = FromStoreSpeedLimit(state[STField::MaxUploadSpeed]);
 
     Json::Value const& filePriorities = state[STField::FilePriorities];
+    Json::Value const& mappedFiles = fastResume[FRField::MappedFiles];
     box.Files.reserve(filePriorities.size());
     for (Json::ArrayIndex i = 0; i < filePriorities.size(); ++i)
     {
         int const filePriority = filePriorities[i].asInt();
+        fs::path const changedPath = GetChangedFilePath(mappedFiles, i);
+        fs::path const originalPath = Util::GetFilePath(box.Torrent, i);
 
         Box::FileInfo file;
         file.DoNotDownload = filePriority == Detail::DoNotDownloadPriority;
         file.Priority = file.DoNotDownload ? Box::NormalPriority : BoxHelper::Priority::FromStore(filePriority - 1,
             Detail::MinPriority, Detail::MaxPriority);
+        file.Path = changedPath == fs::path() || changedPath == originalPath ? fs::path() : changedPath;
         box.Files.push_back(std::move(file));
     }
 

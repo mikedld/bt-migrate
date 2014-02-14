@@ -45,7 +45,8 @@ std::ostream& operator << (std::ostream& stream, Box::FileInfo const& value)
     stream <<
         "(" <<
         std::boolalpha << value.DoNotDownload << "/" <<
-        value.Priority <<
+        value.Priority << "/" <<
+        value.Path <<
         ")";
 
     return stream;
@@ -93,7 +94,7 @@ bool DebugTorrentStateIterator::GetNext(Box& nextBox)
         "DownloadedSize = " << nextBox.DownloadedSize << std::endl <<
         "UploadedSize = " << nextBox.UploadedSize << std::endl <<
         "CorruptedSize = " << nextBox.CorruptedSize << std::endl <<
-        "SavePath = \"" << nextBox.SavePath << "\"" << std::endl <<
+        "SavePath = " << nextBox.SavePath << std::endl <<
         "BlockSize = " << nextBox.BlockSize << std::endl <<
         "RatioLimit = " << nextBox.RatioLimit << std::endl <<
         "DownloadSpeedLimit = " << nextBox.DownloadSpeedLimit << std::endl <<

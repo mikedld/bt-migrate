@@ -247,14 +247,14 @@ void ImportImpl(fs::path const& dataDir, ITorrentStateIterator& boxes, IFileStre
         resume[RField::AddedDate] = static_cast<Json::Int64>(box.AddedAt);
         //resume["bandwidth-priority"] = 0;
         resume[RField::Corrupt] = static_cast<Json::UInt64>(box.CorruptedSize);
-        resume[RField::Destination] = box.SavePath;
+        resume[RField::Destination] = box.SavePath.parent_path().string();
         resume[RField::Dnd] = ToStoreDoNotDownload(box.Files);
         resume[RField::DoneDate] = static_cast<Json::Int64>(box.CompletedAt);
         resume[RField::Downloaded] = static_cast<Json::UInt64>(box.DownloadedSize);
         //resume["downloading-time-seconds"] = 0;
         //resume["idle-limit"] = Json::objectValue;
         //resume["max-peers"] = 5;
-        resume[RField::Name] = box.Torrent["info"]["name"];
+        resume[RField::Name] = box.SavePath.filename().string();
         resume[RField::Paused] = box.IsPaused ? 1 : 0;
         //resume["peers2"] = "";
         resume[RField::Priority] = ToStorePriority(box.Files);

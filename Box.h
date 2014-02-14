@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <boost/filesystem/path.hpp>
+
 #include <json/value.h>
 
 #include <cstdint>
@@ -51,6 +53,7 @@ struct Box
     {
         bool DoNotDownload;
         int Priority;
+        boost::filesystem::path Path;
 
         FileInfo();
     };
@@ -65,7 +68,7 @@ struct Box
     std::uint64_t DownloadedSize;
     std::uint64_t UploadedSize;
     std::uint64_t CorruptedSize;
-    std::string SavePath;
+    boost::filesystem::path SavePath;
     std::uint32_t BlockSize;
     LimitInfo RatioLimit;
     LimitInfo DownloadSpeedLimit;

@@ -112,4 +112,37 @@ std::uint64_t GetTotalTorrentSize(Json::Value const& torrent)
     return result;
 }
 
+fs::path GetFilePath(Json::Value const& torrent, std::size_t fileIndex)
+{
+    fs::path result;
+
+    Json::Value const& info = torrent["info"];
+
+    if (!info.isMember("files"))
+    {
+        if (fileIndex != 0)
+        {
+            Throw<Exception>() << "Torrent file #" << fileIndex << " does not exist";
+        }
+
+        result /= info["name"].asString();
+    }
+    else
+    {
+        Json::Value const& files = info["files"];
+
+        if (fileIndex >= files.size())
+        {
+            Throw<Exception>() << "Torrent file #" << fileIndex << " does not exist";
+        }
+
+        for (Json::Value const& pathPart : files[static_cast<Json::ArrayIndex>(fileIndex)]["path"])
+        {
+            result /= pathPart.asString();
+        }
+    }
+
+    return result;
+}
+
 } // namespace Util

@@ -52,6 +52,7 @@ std::string const OverrideSeedSettings = "override_seedsettings";
 std::string const Path = "path";
 std::string const Prio = "prio";
 std::string const Started = "started";
+std::string const Targets = "targets";
 std::string const Uploaded = "uploaded";
 std::string const UpSpeed = "upspeed";
 std::string const WantedRatio = "wanted_ratio";
@@ -94,6 +95,25 @@ Box::LimitInfo FromStoreSpeedLimit(Json::Value const& storeLimit)
     Box::LimitInfo result;
     result.Mode = storeLimit.asInt() > 0 ? Box::LimitMode::Enabled : Box::LimitMode::Inherit;
     result.Value = storeLimit.asInt();
+    return result;
+}
+
+fs::path GetChangedFilePath(Json::Value const& targets, std::size_t index)
+{
+    fs::path result;
+
+    if (!targets.isNull())
+    {
+        for (Json::Value const& target : targets)
+        {
+            if (target[0].asUInt() == index)
+            {
+                result = Util::GetPath(target[1].asString());
+                break;
+            }
+        }
+    }
+
     return result;
 }
 
@@ -173,22 +193,25 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
     box.DownloadedSize = resume[RField::Downloaded].asUInt64();
     box.UploadedSize = resume[RField::Uploaded].asUInt64();
     box.CorruptedSize = resume[RField::Corrupt].asUInt64();
-    box.SavePath = Util::GetPath(resume[RField::Path].asString()).parent_path().string();
+    box.SavePath = Util::GetPath(resume[RField::Path].asString());
     box.BlockSize = box.Torrent["info"]["piece length"].asUInt();
     box.RatioLimit = FromStoreRatioLimit(resume[RField::OverrideSeedSettings], resume[RField::WantedRatio]);
     box.DownloadSpeedLimit = FromStoreSpeedLimit(resume[RField::DownSpeed]);
     box.UploadSpeedLimit = FromStoreSpeedLimit(resume[RField::UpSpeed]);
 
     std::string const filePriorities = resume[RField::Prio].asString();
+    Json::Value const& targets = resume[RField::Targets];
     box.Files.reserve(filePriorities.size());
     for (std::size_t i = 0; i < filePriorities.size(); ++i)
     {
         int const filePriority = filePriorities[i];
+        fs::path const changedPath = GetChangedFilePath(targets, i);
 
         Box::FileInfo file;
         file.DoNotDownload = filePriority == Detail::DoNotDownloadPriority;
         file.Priority = file.DoNotDownload ? Box::NormalPriority : BoxHelper::Priority::FromStore(filePriority,
             Detail::MinPriority, Detail::MaxPriority);
+        file.Path = changedPath;
         box.Files.push_back(std::move(file));
     }
 
