@@ -183,7 +183,7 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
 
     {
         ReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(m_dataDir / torrentFilename);
-        BoxHelper::LoadTorrent(*stream, box);
+        box.Torrent = TorrentInfo::FromStream(*stream, m_bencoder);
     }
 
     box.AddedAt = resume[RField::AddedOn].asInt();
@@ -194,7 +194,7 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
     box.UploadedSize = resume[RField::Uploaded].asUInt64();
     box.CorruptedSize = resume[RField::Corrupt].asUInt64();
     box.SavePath = Util::GetPath(resume[RField::Path].asString());
-    box.BlockSize = box.Torrent["info"]["piece length"].asUInt();
+    box.BlockSize = box.Torrent.GetPieceSize();
     box.RatioLimit = FromStoreRatioLimit(resume[RField::OverrideSeedSettings], resume[RField::WantedRatio]);
     box.DownloadSpeedLimit = FromStoreSpeedLimit(resume[RField::DownSpeed]);
     box.UploadSpeedLimit = FromStoreSpeedLimit(resume[RField::UpSpeed]);
@@ -215,7 +215,7 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
         box.Files.push_back(std::move(file));
     }
 
-    std::uint64_t const totalSize = Util::GetTotalTorrentSize(box.Torrent);
+    std::uint64_t const totalSize = box.Torrent.GetTotalSize();
     std::uint64_t const totalBlockCount = (totalSize + box.BlockSize - 1) / box.BlockSize;
     box.ValidBlocks.reserve(totalBlockCount + 8);
     for (unsigned char const c : resume[RField::Have].asString())
@@ -276,7 +276,7 @@ ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& dataDir, IFi
     return ITorrentStateIteratorPtr(new uTorrentTorrentStateIterator(dataDir, std::move(resume), fileStreamProvider));
 }
 
-void uTorrentStateStore::Import(fs::path const& dataDir, ITorrentStateIteratorPtr /*boxes*/,
+void uTorrentStateStore::Import(fs::path const& dataDir, ITorrentStateIterator& /*boxes*/,
     IFileStreamProvider& /*fileStreamProvider*/) const
 {
     if (!IsValidDataDir(dataDir, Intention::Import))

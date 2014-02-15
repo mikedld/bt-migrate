@@ -14,6 +14,7 @@ set(${PROJECT_NAME}_SOURCES
     Exception.cpp
     MigrationTransaction.cpp
     TorrentClient.cpp
+    TorrentInfo.cpp
     TorrentStateStoreFactory.cpp
     Util.cpp
 
@@ -43,6 +44,7 @@ set(${PROJECT_NAME}_HEADERS
     MigrationTransaction.h
     ThreadSafeIterator.h
     TorrentClient.h
+    TorrentInfo.h
     TorrentStateStoreFactory.h
     Util.h
 

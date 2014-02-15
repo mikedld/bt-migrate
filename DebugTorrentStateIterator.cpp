@@ -20,6 +20,12 @@
 
 #include <iostream>
 
+std::ostream& operator << (std::ostream& stream, TorrentInfo const& value)
+{
+    stream << "(" << value.GetInfoHash() << ")";
+    return stream;
+}
+
 std::ostream& operator << (std::ostream& stream, Box::LimitInfo const& value)
 {
     switch (value.Mode)
@@ -86,8 +92,7 @@ bool DebugTorrentStateIterator::GetNext(Box& nextBox)
     std::cout << "---" << std::endl;
 
     std::cout <<
-        "InfoHash = \"" << nextBox.InfoHash << "\"" << std::endl <<
-        // "Torrent = " << nextBox.Torrent << std::endl <<
+        "Torrent = " << nextBox.Torrent << std::endl <<
         "AddedAt = " << nextBox.AddedAt << std::endl <<
         "CompletedAt = " << nextBox.CompletedAt << std::endl <<
         "IsPaused = " << std::boolalpha << nextBox.IsPaused << std::endl <<

@@ -195,12 +195,12 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
 
     {
         ReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(m_stateDir / (infoHash + ".torrent"));
-        BoxHelper::LoadTorrent(*stream, box);
+        box.Torrent = TorrentInfo::FromStream(*stream, m_bencoder);
     }
 
-    if (box.InfoHash != infoHash)
+    if (box.Torrent.GetInfoHash() != infoHash)
     {
-        Throw<Exception>() << "Info hashes don't match: " << box.InfoHash << " vs. " << infoHash;
+        Throw<Exception>() << "Info hashes don't match: " << box.Torrent.GetInfoHash() << " vs. " << infoHash;
     }
 
     box.AddedAt = fastResume[FRField::AddedTime].asUInt();
@@ -210,8 +210,8 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
     box.UploadedSize = fastResume[FRField::TotalUploaded].asUInt64();
     box.CorruptedSize = 0;
     box.SavePath = Util::GetPath(state[STField::SavePath].asString()) / (fastResume.isMember(FRField::MappedFiles) ?
-        *Util::GetPath(fastResume[FRField::MappedFiles][0].asString()).begin() : box.Torrent["name"].asString());
-    box.BlockSize = box.Torrent["info"]["piece length"].asUInt();
+        *Util::GetPath(fastResume[FRField::MappedFiles][0].asString()).begin() : box.Torrent.GetName());
+    box.BlockSize = box.Torrent.GetPieceSize();
     box.RatioLimit = FromStoreRatioLimit(state[STField::StopAtRatio], state[STField::StopRatio]);
     box.DownloadSpeedLimit = FromStoreSpeedLimit(state[STField::MaxDownloadSpeed]);
     box.UploadSpeedLimit = FromStoreSpeedLimit(state[STField::MaxUploadSpeed]);
@@ -223,7 +223,7 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
     {
         int const filePriority = filePriorities[i].asInt();
         fs::path const changedPath = GetChangedFilePath(mappedFiles, i);
-        fs::path const originalPath = Util::GetFilePath(box.Torrent, i);
+        fs::path const originalPath = box.Torrent.GetFilePath(i);
 
         Box::FileInfo file;
         file.DoNotDownload = filePriority == Detail::DoNotDownloadPriority;
@@ -233,7 +233,7 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
         box.Files.push_back(std::move(file));
     }
 
-    std::uint64_t const totalSize = Util::GetTotalTorrentSize(box.Torrent);
+    std::uint64_t const totalSize = box.Torrent.GetTotalSize();
     std::uint64_t const totalBlockCount = (totalSize + box.BlockSize - 1) / box.BlockSize;
     box.ValidBlocks.reserve(totalBlockCount);
     for (bool const isPieceValid : fastResume[FRField::Pieces].asString())
@@ -322,7 +322,7 @@ ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFile
         fileStreamProvider));
 }
 
-void DelugeStateStore::Import(fs::path const& dataDir, ITorrentStateIteratorPtr /*boxes*/,
+void DelugeStateStore::Import(fs::path const& dataDir, ITorrentStateIterator& /*boxes*/,
     IFileStreamProvider& /*fileStreamProvider*/) const
 {
     if (!IsValidDataDir(dataDir, Intention::Import))

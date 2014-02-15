@@ -36,7 +36,6 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
-#include <thread>
 
 namespace fs = boost::filesystem;
 
@@ -227,64 +226,6 @@ Json::Value ToStoreSpeedLimit(Box::LimitInfo const& boxLimit)
     return result;
 }
 
-void ImportImpl(fs::path const& dataDir, ITorrentStateIterator& boxes, IFileStreamProvider& fileStreamProvider)
-{
-    namespace RField = Detail::ResumeField;
-
-    BencodeCodec const bencoder;
-    Box box;
-    while (boxes.GetNext(box))
-    {
-        if (box.BlockSize % Detail::BlockSize != 0)
-        {
-            // Transmission doesn't support piece lengths which are not power of two (see trac #4005)
-            continue;
-        }
-
-        Json::Value resume;
-
-        //resume["activity-date"] = 0;
-        resume[RField::AddedDate] = static_cast<Json::Int64>(box.AddedAt);
-        //resume["bandwidth-priority"] = 0;
-        resume[RField::Corrupt] = static_cast<Json::UInt64>(box.CorruptedSize);
-        resume[RField::Destination] = box.SavePath.parent_path().string();
-        resume[RField::Dnd] = ToStoreDoNotDownload(box.Files);
-        resume[RField::DoneDate] = static_cast<Json::Int64>(box.CompletedAt);
-        resume[RField::Downloaded] = static_cast<Json::UInt64>(box.DownloadedSize);
-        //resume["downloading-time-seconds"] = 0;
-        //resume["idle-limit"] = Json::objectValue;
-        //resume["max-peers"] = 5;
-        resume[RField::Name] = box.SavePath.filename().string();
-        resume[RField::Paused] = box.IsPaused ? 1 : 0;
-        //resume["peers2"] = "";
-        resume[RField::Priority] = ToStorePriority(box.Files);
-        resume[RField::Progress] = ToStoreProgress(box.ValidBlocks, box.BlockSize, Util::GetTotalTorrentSize(box.Torrent),
-            box.Files.size());
-        resume[RField::RatioLimit] = ToStoreRatioLimit(box.RatioLimit);
-        //resume["seeding-time-seconds"] = 0;
-        resume[RField::SpeedLimitDown] = ToStoreSpeedLimit(box.DownloadSpeedLimit);
-        resume[RField::SpeedLimitUp] = ToStoreSpeedLimit(box.UploadSpeedLimit);
-        resume[RField::Uploaded] = static_cast<Json::UInt64>(box.UploadedSize);
-
-        std::string const baseName = resume[RField::Name].asString() + '.' + box.InfoHash.substr(0, 16);
-
-        try
-        {
-            WriteStreamPtr stream;
-
-            stream = fileStreamProvider.GetWriteStream(Detail::GetTorrentFilePath(dataDir, baseName));
-            bencoder.Encode(*stream, box.Torrent);
-
-            stream = fileStreamProvider.GetWriteStream(Detail::GetResumeFilePath(dataDir, baseName));
-            bencoder.Encode(*stream, resume);
-        }
-        catch (std::exception const& e)
-        {
-            std::cerr << "Error: " << e.what() << std::endl;
-        }
-    }
-}
-
 } // namespace
 
 TransmissionStateStore::TransmissionStateStore()
@@ -345,24 +286,66 @@ ITorrentStateIteratorPtr TransmissionStateStore::Export(fs::path const& dataDir,
     throw NotImplementedException(__func__);
 }
 
-void TransmissionStateStore::Import(fs::path const& dataDir, ITorrentStateIteratorPtr boxes,
+void TransmissionStateStore::Import(fs::path const& dataDir, ITorrentStateIterator& boxes,
     IFileStreamProvider& fileStreamProvider) const
 {
+    namespace RField = Detail::ResumeField;
+
     if (!IsValidDataDir(dataDir, Intention::Import))
     {
         Throw<Exception>() << "Bad Transmission data directory: " << dataDir;
     }
 
-    unsigned int const threadCount = std::max(1u, std::thread::hardware_concurrency());
+    BencodeCodec bencoder;
 
-    std::vector<std::thread> threads;
-    for (unsigned int i = 0; i < threadCount; ++i)
+    Box box;
+    while (boxes.GetNext(box))
     {
-        threads.emplace_back(&ImportImpl, std::cref(dataDir), std::ref(*boxes), std::ref(fileStreamProvider));
-    }
+        if (box.BlockSize % Detail::BlockSize != 0)
+        {
+            // Transmission doesn't support piece lengths which are not power of two (see trac #4005)
+            continue;
+        }
 
-    for (std::thread& thread : threads)
-    {
-        thread.join();
+        Json::Value resume;
+
+        //resume["activity-date"] = 0;
+        resume[RField::AddedDate] = static_cast<Json::Int64>(box.AddedAt);
+        //resume["bandwidth-priority"] = 0;
+        resume[RField::Corrupt] = static_cast<Json::UInt64>(box.CorruptedSize);
+        resume[RField::Destination] = box.SavePath.parent_path().string();
+        resume[RField::Dnd] = ToStoreDoNotDownload(box.Files);
+        resume[RField::DoneDate] = static_cast<Json::Int64>(box.CompletedAt);
+        resume[RField::Downloaded] = static_cast<Json::UInt64>(box.DownloadedSize);
+        //resume["downloading-time-seconds"] = 0;
+        //resume["idle-limit"] = Json::objectValue;
+        //resume["max-peers"] = 5;
+        resume[RField::Name] = box.SavePath.filename().string();
+        resume[RField::Paused] = box.IsPaused ? 1 : 0;
+        //resume["peers2"] = "";
+        resume[RField::Priority] = ToStorePriority(box.Files);
+        resume[RField::Progress] = ToStoreProgress(box.ValidBlocks, box.BlockSize, box.Torrent.GetTotalSize(), box.Files.size());
+        resume[RField::RatioLimit] = ToStoreRatioLimit(box.RatioLimit);
+        //resume["seeding-time-seconds"] = 0;
+        resume[RField::SpeedLimitDown] = ToStoreSpeedLimit(box.DownloadSpeedLimit);
+        resume[RField::SpeedLimitUp] = ToStoreSpeedLimit(box.UploadSpeedLimit);
+        resume[RField::Uploaded] = static_cast<Json::UInt64>(box.UploadedSize);
+
+        std::string const baseName = resume[RField::Name].asString() + '.' + box.Torrent.GetInfoHash().substr(0, 16);
+
+        try
+        {
+            WriteStreamPtr stream;
+
+            stream = fileStreamProvider.GetWriteStream(Detail::GetTorrentFilePath(dataDir, baseName));
+            box.Torrent.ToStream(*stream, bencoder);
+
+            stream = fileStreamProvider.GetWriteStream(Detail::GetResumeFilePath(dataDir, baseName));
+            bencoder.Encode(*stream, resume);
+        }
+        catch (std::exception const& e)
+        {
+            std::cerr << "Error: " << e.what() << std::endl;
+        }
     }
 }

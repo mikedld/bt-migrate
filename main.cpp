@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+#include "Box.h"
 #include "DebugTorrentStateIterator.h"
 #include "Exception.h"
 #include "IForwardIterator.h"
@@ -28,6 +29,8 @@
 #include <boost/program_options.hpp>
 
 #include <iostream>
+#include <thread>
+#include <vector>
 
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
@@ -166,7 +169,19 @@ int main(int argc, char* argv[])
             boxes.reset(new DebugTorrentStateIterator(std::move(boxes)));
         }
 
-        targetStore->Import(targetDir, std::move(boxes), transaction);
+        unsigned int const threadCount = std::max(1u, std::thread::hardware_concurrency());
+
+        std::vector<std::thread> threads;
+        for (unsigned int i = 0; i < threadCount; ++i)
+        {
+            threads.emplace_back(&ITorrentStateStore::Import, targetStore.get(), std::cref(targetDir), std::ref(*boxes),
+                std::ref(transaction));
+        }
+
+        for (std::thread& thread : threads)
+        {
+            thread.join();
+        }
 
         transaction.Commit();
     }

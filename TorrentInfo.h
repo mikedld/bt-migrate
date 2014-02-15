@@ -16,23 +16,34 @@
 
 #pragma once
 
-#include "ITorrentStateStore.h"
+#include "json/value.h"
 
-class rTorrentStateStore : public ITorrentStateStore
+#include <cstddef>
+#include <cstdint>
+#include <iosfwd>
+#include <string>
+
+namespace boost { namespace filesystem { class path; } }
+
+class IStructuredDataCodec;
+
+class TorrentInfo
 {
 public:
-    rTorrentStateStore();
-    virtual ~rTorrentStateStore();
+    TorrentInfo();
+    TorrentInfo(Json::Value const& torrent);
 
-public:
-    // ITorrentStateStore
-    virtual TorrentClient::Enum GetTorrentClient() const;
+    void ToStream(std::ostream& stream, IStructuredDataCodec const& codec) const;
 
-    virtual boost::filesystem::path GuessDataDir(Intention::Enum intention) const;
-    virtual bool IsValidDataDir(boost::filesystem::path const& dataDir, Intention::Enum intention) const;
+    std::string const& GetInfoHash() const;
+    std::uint64_t GetTotalSize() const;
+    std::uint32_t GetPieceSize() const;
+    std::string GetName() const;
+    boost::filesystem::path GetFilePath(std::size_t fileIndex) const;
 
-    virtual ITorrentStateIteratorPtr Export(boost::filesystem::path const& dataDir,
-        IFileStreamProvider& fileStreamProvider) const;
-    virtual void Import(boost::filesystem::path const& dataDir, ITorrentStateIterator& boxes,
-        IFileStreamProvider& fileStreamProvider) const;
+    static TorrentInfo FromStream(std::istream& stream, IStructuredDataCodec const& codec);
+
+private:
+    Json::Value m_torrent;
+    std::string m_infoHash;
 };

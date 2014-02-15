@@ -31,7 +31,6 @@ Box::FileInfo::FileInfo() :
 }
 
 Box::Box() :
-    InfoHash(),
     Torrent(),
     AddedAt(0),
     CompletedAt(0),

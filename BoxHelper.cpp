@@ -16,13 +16,9 @@
 
 #include "BoxHelper.h"
 
-#include "BencodeCodec.h"
 #include "Box.h"
-#include "Exception.h"
-#include "Util.h"
 
 #include <cmath>
-#include <sstream>
 
 int BoxHelper::Priority::FromStore(int storeValue, int storeMinValue, int storeMaxValue)
 {
@@ -38,20 +34,4 @@ int BoxHelper::Priority::ToStore(int boxValue, int storeMinValue, int storeMaxVa
     int const boxScaleSize = Box::MaxPriority - Box::MinPriority;
     double const boxMiddleValue = Box::MinPriority + boxScaleSize / 2.;
     return std::lround(1. * (boxValue - boxMiddleValue) * storeScaleSize / boxScaleSize);
-}
-
-void BoxHelper::LoadTorrent(std::istream& stream, Box& box)
-{
-    BencodeCodec const bencoder;
-
-    bencoder.Decode(stream, box.Torrent);
-
-    if (!box.Torrent.isMember("info"))
-    {
-        throw Exception("Torrent file is missing info dictionary");
-    }
-
-    std::ostringstream infoStream;
-    bencoder.Encode(infoStream, box.Torrent["info"]);
-    box.InfoHash = Util::CalculateSha1(infoStream.str());
 }

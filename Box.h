@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <boost/filesystem/path.hpp>
+#include "TorrentInfo.h"
 
-#include <json/value.h>
+#include <boost/filesystem/path.hpp>
 
 #include <cstdint>
 #include <ctime>
@@ -60,8 +60,7 @@ struct Box
 
     Box();
 
-    std::string InfoHash;
-    Json::Value Torrent;
+    TorrentInfo Torrent;
     std::time_t AddedAt;
     std::time_t CompletedAt;
     bool IsPaused;

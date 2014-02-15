@@ -151,12 +151,12 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
         torrentFilePath.replace_extension(fs::path());
 
         ReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(torrentFilePath);
-        BoxHelper::LoadTorrent(*stream, box);
+        box.Torrent = TorrentInfo::FromStream(*stream, m_bencoder);
 
         std::string const infoHashFromFilename = torrentFilePath.stem().string();
-        if (!boost::algorithm::iequals(box.InfoHash, infoHashFromFilename))
+        if (!boost::algorithm::iequals(box.Torrent.GetInfoHash(), infoHashFromFilename))
         {
-            Throw<Exception>() << "Info hashes don't match: " << box.InfoHash << " vs. " << infoHashFromFilename;
+            Throw<Exception>() << "Info hashes don't match: " << box.Torrent.GetInfoHash() << " vs. " << infoHashFromFilename;
         }
     }
 
@@ -177,7 +177,7 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
     box.IsPaused = state[SField::Priority].asInt() == 0;
     box.UploadedSize = state[SField::TotalUploaded].asUInt64();
     box.SavePath = Util::GetPath(state[SField::Directory].asString());
-    box.BlockSize = box.Torrent["info"]["piece length"].asUInt();
+    box.BlockSize = box.Torrent.GetPieceSize();
 
     box.Files.reserve(resume[RField::Files].size());
     for (Json::Value const& file : resume[RField::Files])
@@ -193,7 +193,7 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
         box.Files.push_back(std::move(boxFile));
     }
 
-    std::uint64_t const totalSize = Util::GetTotalTorrentSize(box.Torrent);
+    std::uint64_t const totalSize = box.Torrent.GetTotalSize();
     std::uint64_t const totalBlockCount = (totalSize + box.BlockSize - 1) / box.BlockSize;
     box.ValidBlocks.reserve(totalBlockCount + 8);
     for (unsigned char const c : resume[RField::Bitfield].asString())
@@ -301,7 +301,7 @@ ITorrentStateIteratorPtr rTorrentStateStore::Export(fs::path const& dataDir, IFi
     return ITorrentStateIteratorPtr(new rTorrentTorrentStateIterator(dataDir, fileStreamProvider));
 }
 
-void rTorrentStateStore::Import(fs::path const& dataDir, ITorrentStateIteratorPtr /*boxes*/,
+void rTorrentStateStore::Import(fs::path const& dataDir, ITorrentStateIterator& /*boxes*/,
     IFileStreamProvider& /*fileStreamProvider*/) const
 {
     if (!IsValidDataDir(dataDir, Intention::Import))
