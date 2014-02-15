@@ -111,6 +111,7 @@ int main(int argc, char* argv[])
         std::string targetName;
         fs::path sourceDir;
         fs::path targetDir;
+        unsigned int maxThreads = std::max(1u, std::thread::hardware_concurrency());
         bool noBackup = false;
         bool dryRun = false;
         bool verboseOutput = false;
@@ -121,6 +122,8 @@ int main(int argc, char* argv[])
             ("source-dir", po::value<fs::path>(&sourceDir)->value_name("path"), "source client data directory")
             ("target", po::value<std::string>(&targetName)->value_name("name"), "target client name")
             ("target-dir", po::value<fs::path>(&targetDir)->value_name("path"), "target client data directory")
+            ("max-threads", po::value<unsigned int>(&maxThreads)->value_name("N")->default_value(maxThreads),
+                "maximum number of migration threads")
             ("no-backup", po::bool_switch(&noBackup), "do not backup target client data directory")
             ("dry-run", po::bool_switch(&dryRun), "do not write anything to disk");
 
@@ -169,7 +172,7 @@ int main(int argc, char* argv[])
             boxes.reset(new DebugTorrentStateIterator(std::move(boxes)));
         }
 
-        unsigned int const threadCount = std::max(1u, std::thread::hardware_concurrency());
+        unsigned int const threadCount = std::max(1u, maxThreads);
 
         std::vector<std::thread> threads;
         for (unsigned int i = 0; i < threadCount; ++i)
