@@ -262,11 +262,6 @@ bool uTorrentStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum
 
 ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider) const
 {
-    if (!IsValidDataDir(dataDir, Intention::Export))
-    {
-        Throw<Exception>() << "Bad uTorrent data directory: " << dataDir;
-    }
-
     JsonValuePtr resume(new Json::Value());
     {
         ReadStreamPtr const stream = fileStreamProvider.GetReadStream(dataDir / Detail::ResumeFilename);
@@ -276,13 +271,8 @@ ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& dataDir, IFi
     return ITorrentStateIteratorPtr(new uTorrentTorrentStateIterator(dataDir, std::move(resume), fileStreamProvider));
 }
 
-void uTorrentStateStore::Import(fs::path const& dataDir, ITorrentStateIterator& /*boxes*/,
+void uTorrentStateStore::Import(fs::path const& /*dataDir*/, ITorrentStateIterator& /*boxes*/,
     IFileStreamProvider& /*fileStreamProvider*/) const
 {
-    if (!IsValidDataDir(dataDir, Intention::Import))
-    {
-        Throw<Exception>() << "Bad uTorrent data directory: " << dataDir;
-    }
-
     throw NotImplementedException(__func__);
 }

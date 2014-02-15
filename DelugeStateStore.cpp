@@ -299,11 +299,6 @@ bool DelugeStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum /
 
 ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider) const
 {
-    if (!IsValidDataDir(dataDir, Intention::Export))
-    {
-        Throw<Exception>() << "Bad Deluge data directory: " << dataDir;
-    }
-
     fs::path const stateDir = Detail::GetStateDir(dataDir);
 
     JsonValuePtr fastResume(new Json::Value());
@@ -322,13 +317,8 @@ ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFile
         fileStreamProvider));
 }
 
-void DelugeStateStore::Import(fs::path const& dataDir, ITorrentStateIterator& /*boxes*/,
+void DelugeStateStore::Import(fs::path const& /*dataDir*/, ITorrentStateIterator& /*boxes*/,
     IFileStreamProvider& /*fileStreamProvider*/) const
 {
-    if (!IsValidDataDir(dataDir, Intention::Import))
-    {
-        Throw<Exception>() << "Bad Deluge data directory: " << dataDir;
-    }
-
     throw NotImplementedException(__func__);
 }

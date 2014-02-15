@@ -87,6 +87,12 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
     clientName = TorrentClient::ToString(result->GetTorrentClient());
     clientDataDir = fs::canonical(clientDataDir);
 
+    if (!result->IsValidDataDir(clientDataDir, intention))
+    {
+        Throw<Exception>() << "Bad " << (intention == Intention::Export ? "source" : "target") << " data directory: " <<
+            clientDataDir;
+    }
+
     return std::move(result);
 }
 

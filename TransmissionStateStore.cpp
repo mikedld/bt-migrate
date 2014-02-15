@@ -275,14 +275,9 @@ bool TransmissionStateStore::IsValidDataDir(fs::path const& dataDir, Intention::
         fs::is_directory(Detail::GetTorrentsDir(dataDir));
 }
 
-ITorrentStateIteratorPtr TransmissionStateStore::Export(fs::path const& dataDir,
+ITorrentStateIteratorPtr TransmissionStateStore::Export(fs::path const& /*dataDir*/,
     IFileStreamProvider& /*fileStreamProvider*/) const
 {
-    if (!IsValidDataDir(dataDir, Intention::Export))
-    {
-        Throw<Exception>() << "Bad Transmission data directory: " << dataDir;
-    }
-
     throw NotImplementedException(__func__);
 }
 
@@ -290,11 +285,6 @@ void TransmissionStateStore::Import(fs::path const& dataDir, ITorrentStateIterat
     IFileStreamProvider& fileStreamProvider) const
 {
     namespace RField = Detail::ResumeField;
-
-    if (!IsValidDataDir(dataDir, Intention::Import))
-    {
-        Throw<Exception>() << "Bad Transmission data directory: " << dataDir;
-    }
 
     BencodeCodec bencoder;
 
