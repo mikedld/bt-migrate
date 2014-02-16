@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "BencodeCodec.h"
 #include "ITorrentStateStore.h"
 
 class TransmissionStateStore : public ITorrentStateStore
@@ -33,6 +34,8 @@ public:
 
     virtual ITorrentStateIteratorPtr Export(boost::filesystem::path const& dataDir,
         IFileStreamProvider& fileStreamProvider) const;
-    virtual void Import(boost::filesystem::path const& dataDir, ITorrentStateIterator& boxes,
-        IFileStreamProvider& fileStreamProvider) const;
+    virtual void Import(boost::filesystem::path const& dataDir, Box const& box, IFileStreamProvider& fileStreamProvider) const;
+
+private:
+    BencodeCodec const m_bencoder;
 };

@@ -317,7 +317,7 @@ ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFile
         fileStreamProvider));
 }
 
-void DelugeStateStore::Import(fs::path const& /*dataDir*/, ITorrentStateIterator& /*boxes*/,
+void DelugeStateStore::Import(fs::path const& /*dataDir*/, Box const& /*box*/,
     IFileStreamProvider& /*fileStreamProvider*/) const
 {
     throw NotImplementedException(__func__);

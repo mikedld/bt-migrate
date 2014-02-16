@@ -12,6 +12,8 @@ set(${PROJECT_NAME}_SOURCES
     BoxHelper.cpp
     DebugTorrentStateIterator.cpp
     Exception.cpp
+    ImportHelper.cpp
+    Logger.cpp
     MigrationTransaction.cpp
     TorrentClient.cpp
     TorrentInfo.cpp
@@ -40,7 +42,9 @@ set(${PROJECT_NAME}_HEADERS
     BoxHelper.h
     DebugTorrentStateIterator.h
     Exception.h
+    ImportHelper.h
     Intention.h
+    Logger.h
     MigrationTransaction.h
     ThreadSafeIterator.h
     TorrentClient.h

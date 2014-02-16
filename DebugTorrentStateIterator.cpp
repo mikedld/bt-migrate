@@ -17,16 +17,17 @@
 #include "DebugTorrentStateIterator.h"
 
 #include "Box.h"
+#include "Logger.h"
 
-#include <iostream>
-
-std::ostream& operator << (std::ostream& stream, TorrentInfo const& value)
+template<typename StreamT>
+StreamT& operator << (StreamT& stream, TorrentInfo const& value)
 {
     stream << "(" << value.GetInfoHash() << ")";
     return stream;
 }
 
-std::ostream& operator << (std::ostream& stream, Box::LimitInfo const& value)
+template<typename StreamT>
+StreamT& operator << (StreamT& stream, Box::LimitInfo const& value)
 {
     switch (value.Mode)
     {
@@ -46,7 +47,8 @@ std::ostream& operator << (std::ostream& stream, Box::LimitInfo const& value)
     return stream;
 }
 
-std::ostream& operator << (std::ostream& stream, Box::FileInfo const& value)
+template<typename StreamT>
+StreamT& operator << (StreamT& stream, Box::FileInfo const& value)
 {
     stream <<
         "(" <<
@@ -58,7 +60,19 @@ std::ostream& operator << (std::ostream& stream, Box::FileInfo const& value)
     return stream;
 }
 
-std::ostream& operator << (std::ostream& stream, std::vector<bool> const& value)
+template<typename StreamT, typename T>
+StreamT& operator << (StreamT& stream, std::vector<T> const& value)
+{
+    for (T const& x : value)
+    {
+        stream << x;
+    }
+
+    return stream;
+}
+
+template<typename StreamT>
+StreamT& operator << (StreamT& stream, std::vector<bool> const& value)
 {
     for (bool const x : value)
     {
@@ -69,8 +83,7 @@ std::ostream& operator << (std::ostream& stream, std::vector<bool> const& value)
 }
 
 DebugTorrentStateIterator::DebugTorrentStateIterator(ITorrentStateIteratorPtr decoratee) :
-    m_decoratee(std::move(decoratee)),
-    m_coutMutex()
+    m_decoratee(std::move(decoratee))
 {
     //
 }
@@ -87,33 +100,21 @@ bool DebugTorrentStateIterator::GetNext(Box& nextBox)
         return false;
     }
 
-    std::lock_guard<std::mutex> lock(m_coutMutex);
-
-    std::cout << "---" << std::endl;
-
-    std::cout <<
-        "Torrent = " << nextBox.Torrent << std::endl <<
-        "AddedAt = " << nextBox.AddedAt << std::endl <<
-        "CompletedAt = " << nextBox.CompletedAt << std::endl <<
-        "IsPaused = " << std::boolalpha << nextBox.IsPaused << std::endl <<
-        "DownloadedSize = " << nextBox.DownloadedSize << std::endl <<
-        "UploadedSize = " << nextBox.UploadedSize << std::endl <<
-        "CorruptedSize = " << nextBox.CorruptedSize << std::endl <<
-        "SavePath = " << nextBox.SavePath << std::endl <<
-        "BlockSize = " << nextBox.BlockSize << std::endl <<
-        "RatioLimit = " << nextBox.RatioLimit << std::endl <<
-        "DownloadSpeedLimit = " << nextBox.DownloadSpeedLimit << std::endl <<
-        "UploadSpeedLimit = " << nextBox.UploadSpeedLimit << std::endl;
-
-    std::cout << "Files <" << nextBox.Files.size() << "> =";
-    for (Box::FileInfo const& file : nextBox.Files)
-    {
-        std::cout << " " << file;
-    }
-
-    std::cout << std::endl;
-
-    std::cout << "ValidBlocks <" << nextBox.ValidBlocks.size() << "> = " << nextBox.ValidBlocks << std::endl;
+    Logger(Logger::Debug) <<
+        "Torrent=" << nextBox.Torrent << " "
+        "AddedAt=" << nextBox.AddedAt << " "
+        "CompletedAt=" << nextBox.CompletedAt << " "
+        "IsPaused=" << std::boolalpha << nextBox.IsPaused << " "
+        "DownloadedSize=" << nextBox.DownloadedSize << " "
+        "UploadedSize=" << nextBox.UploadedSize << " "
+        "CorruptedSize=" << nextBox.CorruptedSize << " "
+        "SavePath=" << nextBox.SavePath << " "
+        "BlockSize=" << nextBox.BlockSize << " "
+        "RatioLimit=" << nextBox.RatioLimit << " "
+        "DownloadSpeedLimit=" << nextBox.DownloadSpeedLimit << " "
+        "UploadSpeedLimit=" << nextBox.UploadSpeedLimit << " "
+        "Files<" << nextBox.Files.size() << ">=" << nextBox.Files << " "
+        "ValidBlocks<" << nextBox.ValidBlocks.size() << ">=" << nextBox.ValidBlocks;
 
     return true;
 }

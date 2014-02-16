@@ -16,7 +16,6 @@
 
 #include "TransmissionStateStore.h"
 
-#include "BencodeCodec.h"
 #include "Box.h"
 #include "BoxHelper.h"
 #include "Exception.h"
@@ -228,7 +227,8 @@ Json::Value ToStoreSpeedLimit(Box::LimitInfo const& boxLimit)
 
 } // namespace
 
-TransmissionStateStore::TransmissionStateStore()
+TransmissionStateStore::TransmissionStateStore() :
+    m_bencoder()
 {
     //
 }
@@ -281,61 +281,57 @@ ITorrentStateIteratorPtr TransmissionStateStore::Export(fs::path const& /*dataDi
     throw NotImplementedException(__func__);
 }
 
-void TransmissionStateStore::Import(fs::path const& dataDir, ITorrentStateIterator& boxes,
-    IFileStreamProvider& fileStreamProvider) const
+void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFileStreamProvider& fileStreamProvider) const
 {
     namespace RField = Detail::ResumeField;
 
-    BencodeCodec bencoder;
-
-    Box box;
-    while (boxes.GetNext(box))
+    if (box.BlockSize % Detail::BlockSize != 0)
     {
-        if (box.BlockSize % Detail::BlockSize != 0)
+        // See trac #4005.
+        Throw<Exception>() << "Transmission does not support torrents with piece length not multiple of two: " << box.BlockSize;
+    }
+
+    for (Box::FileInfo const& file : box.Files)
+    {
+        if (!file.Path.is_relative())
         {
-            // Transmission doesn't support piece lengths which are not power of two (see trac #4005)
-            continue;
+            Throw<Exception>() << "Transmission does not support moving files outside of download directory: " << file.Path;
         }
+    }
 
-        Json::Value resume;
+    Json::Value resume;
 
-        //resume["activity-date"] = 0;
-        resume[RField::AddedDate] = static_cast<Json::Int64>(box.AddedAt);
-        //resume["bandwidth-priority"] = 0;
-        resume[RField::Corrupt] = static_cast<Json::UInt64>(box.CorruptedSize);
-        resume[RField::Destination] = box.SavePath.parent_path().string();
-        resume[RField::Dnd] = ToStoreDoNotDownload(box.Files);
-        resume[RField::DoneDate] = static_cast<Json::Int64>(box.CompletedAt);
-        resume[RField::Downloaded] = static_cast<Json::UInt64>(box.DownloadedSize);
-        //resume["downloading-time-seconds"] = 0;
-        //resume["idle-limit"] = Json::objectValue;
-        //resume["max-peers"] = 5;
-        resume[RField::Name] = box.SavePath.filename().string();
-        resume[RField::Paused] = box.IsPaused ? 1 : 0;
-        //resume["peers2"] = "";
-        resume[RField::Priority] = ToStorePriority(box.Files);
-        resume[RField::Progress] = ToStoreProgress(box.ValidBlocks, box.BlockSize, box.Torrent.GetTotalSize(), box.Files.size());
-        resume[RField::RatioLimit] = ToStoreRatioLimit(box.RatioLimit);
-        //resume["seeding-time-seconds"] = 0;
-        resume[RField::SpeedLimitDown] = ToStoreSpeedLimit(box.DownloadSpeedLimit);
-        resume[RField::SpeedLimitUp] = ToStoreSpeedLimit(box.UploadSpeedLimit);
-        resume[RField::Uploaded] = static_cast<Json::UInt64>(box.UploadedSize);
+    //resume["activity-date"] = 0;
+    resume[RField::AddedDate] = static_cast<Json::Int64>(box.AddedAt);
+    //resume["bandwidth-priority"] = 0;
+    resume[RField::Corrupt] = static_cast<Json::UInt64>(box.CorruptedSize);
+    resume[RField::Destination] = box.SavePath.parent_path().string();
+    resume[RField::Dnd] = ToStoreDoNotDownload(box.Files);
+    resume[RField::DoneDate] = static_cast<Json::Int64>(box.CompletedAt);
+    resume[RField::Downloaded] = static_cast<Json::UInt64>(box.DownloadedSize);
+    //resume["downloading-time-seconds"] = 0;
+    //resume["idle-limit"] = Json::objectValue;
+    //resume["max-peers"] = 5;
+    resume[RField::Name] = box.SavePath.filename().string();
+    resume[RField::Paused] = box.IsPaused ? 1 : 0;
+    //resume["peers2"] = "";
+    resume[RField::Priority] = ToStorePriority(box.Files);
+    resume[RField::Progress] = ToStoreProgress(box.ValidBlocks, box.BlockSize, box.Torrent.GetTotalSize(), box.Files.size());
+    resume[RField::RatioLimit] = ToStoreRatioLimit(box.RatioLimit);
+    //resume["seeding-time-seconds"] = 0;
+    resume[RField::SpeedLimitDown] = ToStoreSpeedLimit(box.DownloadSpeedLimit);
+    resume[RField::SpeedLimitUp] = ToStoreSpeedLimit(box.UploadSpeedLimit);
+    resume[RField::Uploaded] = static_cast<Json::UInt64>(box.UploadedSize);
 
-        std::string const baseName = resume[RField::Name].asString() + '.' + box.Torrent.GetInfoHash().substr(0, 16);
+    std::string const baseName = resume[RField::Name].asString() + '.' + box.Torrent.GetInfoHash().substr(0, 16);
 
-        try
-        {
-            WriteStreamPtr stream;
+    {
+        WriteStreamPtr const stream = fileStreamProvider.GetWriteStream(Detail::GetTorrentFilePath(dataDir, baseName));
+        box.Torrent.ToStream(*stream, m_bencoder);
+    }
 
-            stream = fileStreamProvider.GetWriteStream(Detail::GetTorrentFilePath(dataDir, baseName));
-            box.Torrent.ToStream(*stream, bencoder);
-
-            stream = fileStreamProvider.GetWriteStream(Detail::GetResumeFilePath(dataDir, baseName));
-            bencoder.Encode(*stream, resume);
-        }
-        catch (std::exception const& e)
-        {
-            std::cerr << "Error: " << e.what() << std::endl;
-        }
+    {
+        WriteStreamPtr const stream = fileStreamProvider.GetWriteStream(Detail::GetResumeFilePath(dataDir, baseName));
+        m_bencoder.Encode(*stream, resume);
     }
 }

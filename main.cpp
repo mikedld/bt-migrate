@@ -18,7 +18,9 @@
 #include "DebugTorrentStateIterator.h"
 #include "Exception.h"
 #include "IForwardIterator.h"
+#include "ImportHelper.h"
 #include "ITorrentStateStore.h"
+#include "Logger.h"
 #include "MigrationTransaction.h"
 #include "Throw.h"
 #include "TorrentStateStoreFactory.h"
@@ -59,6 +61,9 @@ void PrintUsage(std::string const& programName, po::options_description const& o
 ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactory, Intention::Enum intention,
     std::string& clientName, fs::path& clientDataDir)
 {
+    std::string const lowerCaseClientName = intention == Intention::Export ? "source" : "target";
+    std::string const upperCaseClientName = intention == Intention::Export ? "Source" : "Target";
+
     ITorrentStateStorePtr result;
 
     if (!clientName.empty())
@@ -69,8 +74,7 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
             clientDataDir = result->GuessDataDir(intention);
             if (clientDataDir.empty())
             {
-                Throw<Exception>() << "No data directory found for " << (intention == Intention::Export ? "source" :
-                    "target") << " torrent client";
+                Throw<Exception>() << "No data directory found for " << lowerCaseClientName << " torrent client";
             }
         }
     }
@@ -80,8 +84,7 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
     }
     else
     {
-        Throw<Exception>() << (intention == Intention::Export ? "Source" : "Target") <<
-            " torrent client name and/or data directory are not specified";
+        Throw<Exception>() << upperCaseClientName << " torrent client name and/or data directory are not specified";
     }
 
     clientName = TorrentClient::ToString(result->GetTorrentClient());
@@ -89,9 +92,11 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
 
     if (!result->IsValidDataDir(clientDataDir, intention))
     {
-        Throw<Exception>() << "Bad " << (intention == Intention::Export ? "source" : "target") << " data directory: " <<
+        Throw<Exception>() << "Bad " << lowerCaseClientName << " data directory: " <<
             clientDataDir;
     }
+
+    Logger(Logger::Info) << upperCaseClientName << ": " << clientName << " (" << clientDataDir << ")";
 
     return std::move(result);
 }
@@ -164,10 +169,7 @@ int main(int argc, char* argv[])
         TorrentStateStoreFactory const storeFactory;
 
         ITorrentStateStorePtr const sourceStore = FindStateStore(storeFactory, Intention::Export, sourceName, sourceDir);
-        std::cout << "Source: " << sourceName << " (" << sourceDir << ")" << std::endl;
-
         ITorrentStateStorePtr const targetStore = FindStateStore(storeFactory, Intention::Import, targetName, targetDir);
-        std::cout << "Target: " << targetName << " (" << targetDir << ")" << std::endl;
 
         MigrationTransaction transaction(noBackup, dryRun);
 
@@ -180,11 +182,13 @@ int main(int argc, char* argv[])
 
         unsigned int const threadCount = std::max(1u, maxThreads);
 
+        ImportHelper importHelper;
+
         std::vector<std::thread> threads;
         for (unsigned int i = 0; i < threadCount; ++i)
         {
-            threads.emplace_back(&ITorrentStateStore::Import, targetStore.get(), std::cref(targetDir), std::ref(*boxes),
-                std::ref(transaction));
+            threads.emplace_back(&ImportHelper::Import, &importHelper, std::ref(*targetStore), std::cref(targetDir),
+                std::ref(*boxes), std::ref(transaction));
         }
 
         for (std::thread& thread : threads)
@@ -196,7 +200,7 @@ int main(int argc, char* argv[])
     }
     catch (std::exception const& e)
     {
-        std::cerr << "Error: " << e.what() << std::endl;
+        Logger(Logger::Error) << "Error: " << e.what();
         return 1;
     }
 

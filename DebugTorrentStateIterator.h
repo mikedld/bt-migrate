@@ -19,8 +19,6 @@
 #include "IForwardIterator.h"
 #include "ITorrentStateStore.h"
 
-#include <mutex>
-
 class DebugTorrentStateIterator : public ITorrentStateIterator
 {
 public:
@@ -33,5 +31,4 @@ public:
 
 private:
     ITorrentStateIteratorPtr const m_decoratee;
-    std::mutex m_coutMutex;
 };

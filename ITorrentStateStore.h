@@ -44,6 +44,6 @@ public:
 
     virtual ITorrentStateIteratorPtr Export(boost::filesystem::path const& dataDir,
         IFileStreamProvider& fileStreamProvider) const = 0;
-    virtual void Import(boost::filesystem::path const& dataDir, ITorrentStateIterator& boxes,
+    virtual void Import(boost::filesystem::path const& dataDir, Box const& box,
         IFileStreamProvider& fileStreamProvider) const = 0;
 };

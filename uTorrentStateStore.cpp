@@ -271,7 +271,7 @@ ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& dataDir, IFi
     return ITorrentStateIteratorPtr(new uTorrentTorrentStateIterator(dataDir, std::move(resume), fileStreamProvider));
 }
 
-void uTorrentStateStore::Import(fs::path const& /*dataDir*/, ITorrentStateIterator& /*boxes*/,
+void uTorrentStateStore::Import(fs::path const& /*dataDir*/, Box const& /*box*/,
     IFileStreamProvider& /*fileStreamProvider*/) const
 {
     throw NotImplementedException(__func__);
