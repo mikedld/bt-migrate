@@ -17,7 +17,6 @@
 #include "DebugTorrentStateIterator.h"
 
 #include "Box.h"
-#include "Logger.h"
 
 template<typename StreamT>
 StreamT& operator << (StreamT& stream, TorrentInfo const& value)
@@ -81,6 +80,8 @@ StreamT& operator << (StreamT& stream, std::vector<bool> const& value)
 
     return stream;
 }
+
+#include "Logger.h"
 
 DebugTorrentStateIterator::DebugTorrentStateIterator(ITorrentStateIteratorPtr decoratee) :
     m_decoratee(std::move(decoratee))
