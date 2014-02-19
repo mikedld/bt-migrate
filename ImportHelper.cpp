@@ -1,17 +1,39 @@
 #include "ImportHelper.h"
 
 #include "Box.h"
+#include "DebugTorrentStateIterator.h"
 #include "IFileStreamProvider.h"
 #include "IForwardIterator.h"
 #include "ITorrentStateStore.h"
 #include "Logger.h"
+#include "SignalHandler.h"
 
 #include <boost/filesystem/path.hpp>
 
 #include <exception>
 #include <iostream>
+#include <thread>
+#include <vector>
 
-ImportHelper::ImportHelper()
+namespace fs = boost::filesystem;
+
+ImportHelper::Result::Result() :
+    SuccessCount(0),
+    FailCount(0),
+    SkipCount(0)
+{
+    //
+}
+
+ImportHelper::ImportHelper(ITorrentStateStorePtr sourceStore, boost::filesystem::path const& sourceDataDir,
+    ITorrentStateStorePtr targetStore, boost::filesystem::path const& targetDataDir, IFileStreamProvider& fileStreamProvider,
+    SignalHandler const& signalHandler) :
+    m_sourceStore(std::move(sourceStore)),
+    m_sourceDataDir(sourceDataDir),
+    m_targetStore(std::move(targetStore)),
+    m_targetDataDir(targetDataDir),
+    m_fileStreamProvider(fileStreamProvider),
+    m_signalHandler(signalHandler)
 {
     //
 }
@@ -21,30 +43,67 @@ ImportHelper::~ImportHelper()
     //
 }
 
-void ImportHelper::Import(ITorrentStateStore& store, boost::filesystem::path const& dataDir,
-    ITorrentStateIterator& boxes, IFileStreamProvider& fileStreamProvider)
+ImportHelper::Result ImportHelper::Import(unsigned int threadCount)
 {
+    Result result;
+
     try
     {
-        Box box;
-        while (boxes.GetNext(box))
-        {
-            std::string const prefix = "[" + box.SavePath.filename().string() + "] ";
+        ITorrentStateIteratorPtr boxes = m_sourceStore->Export(m_sourceDataDir, m_fileStreamProvider);
+        boxes.reset(new DebugTorrentStateIterator(std::move(boxes)));
 
-            try
-            {
-                Logger(Logger::Info) << prefix << "Import started";
-                store.Import(dataDir, box, fileStreamProvider);
-                Logger(Logger::Info) << prefix << "Import finished";
-            }
-            catch (std::exception const& e)
-            {
-                Logger(Logger::Warning) << prefix << "Import failed: " << e.what();
-            }
+        std::vector<std::thread> threads;
+        for (unsigned int i = 0; i < threadCount; ++i)
+        {
+            threads.emplace_back(&ImportHelper::ImportImpl, this, std::cref(m_targetDataDir), std::ref(*boxes),
+                std::ref(result));
+        }
+
+        for (std::thread& thread : threads)
+        {
+            thread.join();
         }
     }
     catch (std::exception const& e)
     {
         Logger(Logger::Error) << "Error: " << e.what();
+        throw;
+    }
+
+    if (m_signalHandler.IsInterrupted())
+    {
+        throw Exception("Execution has been interrupted");
+    }
+
+    Logger(Logger::Info) << "Finished: " << result.SuccessCount << " succeeded, " << result.FailCount << " failed, " <<
+        result.SkipCount << " skipped";
+
+    return result;
+}
+
+void ImportHelper::ImportImpl(fs::path const& targetDataDir, ITorrentStateIterator& boxes, Result& result)
+{
+    Box box;
+    while (!m_signalHandler.IsInterrupted() && boxes.GetNext(box))
+    {
+        std::string const prefix = "[" + box.SavePath.filename().string() + "] ";
+
+        try
+        {
+            Logger(Logger::Info) << prefix << "Import started";
+            m_targetStore->Import(targetDataDir, box, m_fileStreamProvider);
+            ++result.SuccessCount;
+            Logger(Logger::Info) << prefix << "Import succeeded";
+        }
+        catch (ImportCancelledException const& e)
+        {
+            ++result.SkipCount;
+            Logger(Logger::Warning) << prefix << "Import skipped: " << e.what();
+        }
+        catch (std::exception const& e)
+        {
+            ++result.FailCount;
+            Logger(Logger::Error) << prefix << "Import failed: " << e.what();
+        }
     }
 }

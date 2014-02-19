@@ -22,6 +22,7 @@
 #include "Exception.h"
 #include "IFileStreamProvider.h"
 #include "IForwardIterator.h"
+#include "Logger.h"
 #include "PickleCodec.h"
 #include "Throw.h"
 #include "Util.h"
@@ -195,7 +196,7 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
 
     {
         ReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(m_stateDir / (infoHash + ".torrent"));
-        box.Torrent = TorrentInfo::FromStream(*stream, m_bencoder);
+        box.Torrent = TorrentInfo::Decode(*stream, m_bencoder);
     }
 
     if (box.Torrent.GetInfoHash() != infoHash)
@@ -301,11 +302,15 @@ ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFile
 {
     fs::path const stateDir = Detail::GetStateDir(dataDir);
 
+    Logger(Logger::Debug) << "[Deluge] Loading " << Detail::FastResumeFilename;
+
     JsonValuePtr fastResume(new Json::Value());
     {
         ReadStreamPtr const stream = fileStreamProvider.GetReadStream(stateDir / Detail::FastResumeFilename);
         BencodeCodec().Decode(*stream, *fastResume);
     }
+
+    Logger(Logger::Debug) << "[Deluge] Loading " << Detail::StateFilename;
 
     JsonValuePtr state(new Json::Value());
     {

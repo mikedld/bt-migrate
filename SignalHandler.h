@@ -16,34 +16,20 @@
 
 #pragma once
 
-#include "json/value.h"
-
-#include <cstddef>
-#include <cstdint>
-#include <iosfwd>
-#include <string>
-
-namespace boost { namespace filesystem { class path; } }
-
-class IStructuredDataCodec;
-
-class TorrentInfo
+class SignalHandler
 {
+    typedef void (*HandlerType)(int);
+
 public:
-    TorrentInfo();
-    TorrentInfo(Json::Value const& torrent);
+    SignalHandler();
+    ~SignalHandler();
 
-    void Encode(std::ostream& stream, IStructuredDataCodec const& codec) const;
+    SignalHandler(SignalHandler const& other) = delete;
+    SignalHandler& operator = (SignalHandler const& other) = delete;
 
-    std::string const& GetInfoHash() const;
-    std::uint64_t GetTotalSize() const;
-    std::uint32_t GetPieceSize() const;
-    std::string GetName() const;
-    boost::filesystem::path GetFilePath(std::size_t fileIndex) const;
-
-    static TorrentInfo Decode(std::istream& stream, IStructuredDataCodec const& codec);
+    bool IsInterrupted() const;
 
 private:
-    Json::Value m_torrent;
-    std::string m_infoHash;
+    HandlerType const m_oldIntHandler;
+    HandlerType const m_oldTermHandler;
 };

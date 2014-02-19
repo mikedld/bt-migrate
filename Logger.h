@@ -17,6 +17,8 @@ public:
     Logger(Level level);
     ~Logger();
 
+    static void SetMinimumLevel(Level level);
+
 private:
     Level const m_level;
 };

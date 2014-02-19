@@ -14,36 +14,36 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-#pragma once
+#include "SignalHandler.h"
 
-#include "json/value.h"
+#include <csignal>
 
-#include <cstddef>
-#include <cstdint>
-#include <iosfwd>
-#include <string>
-
-namespace boost { namespace filesystem { class path; } }
-
-class IStructuredDataCodec;
-
-class TorrentInfo
+namespace
 {
-public:
-    TorrentInfo();
-    TorrentInfo(Json::Value const& torrent);
 
-    void Encode(std::ostream& stream, IStructuredDataCodec const& codec) const;
+volatile std::sig_atomic_t SignalStatus = 0;
 
-    std::string const& GetInfoHash() const;
-    std::uint64_t GetTotalSize() const;
-    std::uint32_t GetPieceSize() const;
-    std::string GetName() const;
-    boost::filesystem::path GetFilePath(std::size_t fileIndex) const;
+void HandleSignal(int signal)
+{
+    SignalStatus = signal;
+}
 
-    static TorrentInfo Decode(std::istream& stream, IStructuredDataCodec const& codec);
+} // namespace
 
-private:
-    Json::Value m_torrent;
-    std::string m_infoHash;
-};
+SignalHandler::SignalHandler() :
+    m_oldIntHandler(std::signal(SIGINT, &HandleSignal)),
+    m_oldTermHandler(std::signal(SIGTERM, &HandleSignal))
+{
+    //
+}
+
+SignalHandler::~SignalHandler()
+{
+    std::signal(SIGTERM, m_oldTermHandler);
+    std::signal(SIGINT, m_oldIntHandler);
+}
+
+bool SignalHandler::IsInterrupted() const
+{
+    return SignalStatus != 0;
+}

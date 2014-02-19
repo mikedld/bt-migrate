@@ -15,6 +15,7 @@ set(${PROJECT_NAME}_SOURCES
     ImportHelper.cpp
     Logger.cpp
     MigrationTransaction.cpp
+    SignalHandler.cpp
     TorrentClient.cpp
     TorrentInfo.cpp
     TorrentStateStoreFactory.cpp
@@ -46,6 +47,7 @@ set(${PROJECT_NAME}_HEADERS
     Intention.h
     Logger.h
     MigrationTransaction.h
+    SignalHandler.h
     ThreadSafeIterator.h
     TorrentClient.h
     TorrentInfo.h

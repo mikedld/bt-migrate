@@ -17,6 +17,7 @@
 #include "MigrationTransaction.h"
 
 #include "Exception.h"
+#include "Logger.h"
 #include "Throw.h"
 
 #include <boost/date_time.hpp>
@@ -46,6 +47,13 @@ MigrationTransaction::~MigrationTransaction()
         return;
     }
 
+    if (m_safePaths.empty())
+    {
+        return;
+    }
+
+    Logger(Logger::Info) << "Reverting changes";
+
     for (fs::path const& safePath : m_safePaths)
     {
         if (!fs::exists(safePath) && fs::exists(GetBackupPath(safePath)))
@@ -63,6 +71,8 @@ void MigrationTransaction::Commit()
     {
         return;
     }
+
+    Logger(Logger::Info) << "Committing changes";
 
     for (fs::path const& safePath : m_safePaths)
     {

@@ -151,7 +151,7 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
         torrentFilePath.replace_extension(fs::path());
 
         ReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(torrentFilePath);
-        box.Torrent = TorrentInfo::FromStream(*stream, m_bencoder);
+        box.Torrent = TorrentInfo::Decode(*stream, m_bencoder);
 
         std::string const infoHashFromFilename = torrentFilePath.stem().string();
         if (!boost::algorithm::iequals(box.Torrent.GetInfoHash(), infoHashFromFilename))

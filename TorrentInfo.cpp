@@ -59,7 +59,7 @@ TorrentInfo::TorrentInfo(Json::Value const& torrent) :
     //
 }
 
-void TorrentInfo::ToStream(std::ostream& stream, IStructuredDataCodec const& codec) const
+void TorrentInfo::Encode(std::ostream& stream, IStructuredDataCodec const& codec) const
 {
     codec.Encode(stream, m_torrent);
 }
@@ -137,7 +137,7 @@ fs::path TorrentInfo::GetFilePath(std::size_t fileIndex) const
     return result;
 }
 
-TorrentInfo TorrentInfo::FromStream(std::istream& stream, IStructuredDataCodec const& codec)
+TorrentInfo TorrentInfo::Decode(std::istream& stream, IStructuredDataCodec const& codec)
 {
     Json::Value torrent;
     codec.Decode(stream, torrent);

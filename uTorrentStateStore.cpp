@@ -22,6 +22,7 @@
 #include "Exception.h"
 #include "IFileStreamProvider.h"
 #include "IForwardIterator.h"
+#include "Logger.h"
 #include "Throw.h"
 #include "Util.h"
 
@@ -183,7 +184,7 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
 
     {
         ReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(m_dataDir / torrentFilename);
-        box.Torrent = TorrentInfo::FromStream(*stream, m_bencoder);
+        box.Torrent = TorrentInfo::Decode(*stream, m_bencoder);
     }
 
     box.AddedAt = resume[RField::AddedOn].asInt();
@@ -262,6 +263,8 @@ bool uTorrentStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum
 
 ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider) const
 {
+    Logger(Logger::Debug) << "[uTorrent] Loading " << Detail::ResumeFilename;
+
     JsonValuePtr resume(new Json::Value());
     {
         ReadStreamPtr const stream = fileStreamProvider.GetReadStream(dataDir / Detail::ResumeFilename);

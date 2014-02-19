@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "Exception.h"
 #include "Intention.h"
 #include "TorrentClient.h"
 
@@ -46,4 +47,10 @@ public:
         IFileStreamProvider& fileStreamProvider) const = 0;
     virtual void Import(boost::filesystem::path const& dataDir, Box const& box,
         IFileStreamProvider& fileStreamProvider) const = 0;
+};
+
+class ImportCancelledException : public Exception
+{
+public:
+    using Exception::Exception;
 };

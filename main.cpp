@@ -15,13 +15,12 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include "Box.h"
-#include "DebugTorrentStateIterator.h"
 #include "Exception.h"
-#include "IForwardIterator.h"
 #include "ImportHelper.h"
 #include "ITorrentStateStore.h"
 #include "Logger.h"
 #include "MigrationTransaction.h"
+#include "SignalHandler.h"
 #include "Throw.h"
 #include "TorrentStateStoreFactory.h"
 
@@ -30,9 +29,11 @@
 #include <boost/locale.hpp>
 #include <boost/program_options.hpp>
 
+#include <csignal>
+#include <exception>
 #include <iostream>
+#include <memory>
 #include <thread>
-#include <vector>
 
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
@@ -166,37 +167,54 @@ int main(int argc, char* argv[])
             return 0;
         }
 
-        TorrentStateStoreFactory const storeFactory;
-
-        ITorrentStateStorePtr const sourceStore = FindStateStore(storeFactory, Intention::Export, sourceName, sourceDir);
-        ITorrentStateStorePtr const targetStore = FindStateStore(storeFactory, Intention::Import, targetName, targetDir);
-
-        MigrationTransaction transaction(noBackup, dryRun);
-
-        ITorrentStateIteratorPtr boxes = sourceStore->Export(sourceDir, transaction);
-
         if (verboseOutput)
         {
-            boxes.reset(new DebugTorrentStateIterator(std::move(boxes)));
+            Logger::SetMinimumLevel(Logger::Debug);
         }
+
+        TorrentStateStoreFactory const storeFactory;
+
+        ITorrentStateStorePtr sourceStore = FindStateStore(storeFactory, Intention::Export, sourceName, sourceDir);
+        ITorrentStateStorePtr targetStore = FindStateStore(storeFactory, Intention::Import, targetName, targetDir);
 
         unsigned int const threadCount = std::max(1u, maxThreads);
 
-        ImportHelper importHelper;
+        MigrationTransaction transaction(noBackup, dryRun);
 
-        std::vector<std::thread> threads;
-        for (unsigned int i = 0; i < threadCount; ++i)
+        SignalHandler const signalHandler;
+
+        ImportHelper importHelper(std::move(sourceStore), sourceDir, std::move(targetStore), targetDir, transaction,
+            signalHandler);
+        ImportHelper::Result const result = importHelper.Import(threadCount);
+
+        bool shouldCommit = true;
+
+        if ((result.FailCount != 0 || result.SkipCount != 0) && !noBackup && !dryRun)
         {
-            threads.emplace_back(&ImportHelper::Import, &importHelper, std::ref(*targetStore), std::cref(targetDir),
-                std::ref(*boxes), std::ref(transaction));
+            while (!signalHandler.IsInterrupted())
+            {
+                std::cout << "Import is not clean, do you want to commit? [yes/no]: " << std::flush;
+
+                std::string answer;
+                std::getline(std::cin, answer);
+
+                if (answer == "yes")
+                {
+                    break;
+                }
+
+                if (answer == "no")
+                {
+                    shouldCommit = false;
+                    break;
+                }
+            }
         }
 
-        for (std::thread& thread : threads)
+        if (shouldCommit && !signalHandler.IsInterrupted())
         {
-            thread.join();
+            transaction.Commit();
         }
-
-        transaction.Commit();
     }
     catch (std::exception const& e)
     {

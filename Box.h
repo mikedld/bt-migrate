@@ -22,7 +22,6 @@
 
 #include <cstdint>
 #include <ctime>
-#include <string>
 #include <vector>
 
 struct Box

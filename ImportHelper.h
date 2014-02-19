@@ -1,8 +1,8 @@
 #pragma once
 
-#include <memory>
+#include <boost/filesystem/path.hpp>
 
-namespace boost { namespace filesystem { class path; } }
+#include <memory>
 
 template<typename... ArgsT>
 class IForwardIterator;
@@ -12,14 +12,40 @@ typedef IForwardIterator<Box> ITorrentStateIterator;
 typedef std::unique_ptr<ITorrentStateIterator> ITorrentStateIteratorPtr;
 
 class IFileStreamProvider;
+
 class ITorrentStateStore;
+typedef std::unique_ptr<ITorrentStateStore> ITorrentStateStorePtr;
+
+class SignalHandler;
 
 class ImportHelper
 {
 public:
-    ImportHelper();
+    struct Result
+    {
+        std::size_t SuccessCount;
+        std::size_t FailCount;
+        std::size_t SkipCount;
+
+        Result();
+    };
+
+public:
+    ImportHelper(ITorrentStateStorePtr sourceStore, boost::filesystem::path const& sourceDataDir,
+        ITorrentStateStorePtr targetStore, boost::filesystem::path const& targetDataDir,
+        IFileStreamProvider& fileStreamProvider, SignalHandler const& signalHandler);
     ~ImportHelper();
 
-    void Import(ITorrentStateStore& store, boost::filesystem::path const& dataDir, ITorrentStateIterator& boxes,
-        IFileStreamProvider& fileStreamProvider);
+    Result Import(unsigned int threadCount);
+
+private:
+    void ImportImpl(boost::filesystem::path const& targetDataDir, ITorrentStateIterator& boxes, Result& result);
+
+private:
+    ITorrentStateStorePtr const m_sourceStore;
+    boost::filesystem::path const m_sourceDataDir;
+    ITorrentStateStorePtr const m_targetStore;
+    boost::filesystem::path const m_targetDataDir;
+    IFileStreamProvider& m_fileStreamProvider;
+    SignalHandler const& m_signalHandler;
 };

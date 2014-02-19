@@ -288,14 +288,16 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
     if (box.BlockSize % Detail::BlockSize != 0)
     {
         // See trac #4005.
-        Throw<Exception>() << "Transmission does not support torrents with piece length not multiple of two: " << box.BlockSize;
+        Throw<ImportCancelledException>() << "Transmission does not support torrents with piece length not multiple of two: " <<
+            box.BlockSize;
     }
 
     for (Box::FileInfo const& file : box.Files)
     {
         if (!file.Path.is_relative())
         {
-            Throw<Exception>() << "Transmission does not support moving files outside of download directory: " << file.Path;
+            Throw<ImportCancelledException>() << "Transmission does not support moving files outside of download directory: " <<
+                file.Path;
         }
     }
 
@@ -327,7 +329,7 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
 
     {
         WriteStreamPtr const stream = fileStreamProvider.GetWriteStream(Detail::GetTorrentFilePath(dataDir, baseName));
-        box.Torrent.ToStream(*stream, m_bencoder);
+        box.Torrent.Encode(*stream, m_bencoder);
     }
 
     {

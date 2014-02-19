@@ -11,6 +11,7 @@ namespace
 {
 
 std::mutex LogFlushMutex;
+Logger::Level MinimumLevel = Logger::Info;
 
 std::string LevelToString(Logger::Level level)
 {
@@ -39,7 +40,17 @@ Logger::Logger(Level level) :
 
 Logger::~Logger()
 {
+    if (m_level < MinimumLevel)
+    {
+        return;
+    }
+
     std::lock_guard<std::mutex> lock(LogFlushMutex);
     std::cout << "[" << pt::to_simple_string(pt::microsec_clock::local_time()) << "] [" << LevelToString(m_level) << "] " <<
         str() << std::endl;
+}
+
+void Logger::SetMinimumLevel(Level level)
+{
+    MinimumLevel = level;
 }
