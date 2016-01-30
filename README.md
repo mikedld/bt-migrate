@@ -1,3 +1,6 @@
+[![Travis Build Status](https://travis-ci.org/mikedld/bt-migrate.svg?branch=master)](https://travis-ci.org/mikedld/bt-migrate)
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/7775/badge.svg)](https://scan.coverity.com/projects/mikedld-bt-migrate)
+
 About
 ==========
 

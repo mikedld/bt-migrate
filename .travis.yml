@@ -1,0 +1,81 @@
+language: cpp
+notifications:
+  email: false
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-precise-3.8
+      - boost-latest
+    packages:
+      - gcc-6
+      - g++-6
+      - clang-3.8
+      - libboost-date-time1.55.0
+      - libboost-date-time1.55-dev
+      - libboost-filesystem1.55.0
+      - libboost-filesystem1.55-dev
+      - libboost-locale1.55.0
+      - libboost-locale1.55-dev
+      - libboost-program-options1.55.0
+      - libboost-program-options1.55-dev
+      - libboost-system1.55.0
+      - libboost-system1.55-dev
+      # - libjsoncpp1
+      # - libjsoncpp-dev
+  coverity_scan:
+    project:
+      name: "mikedld/bt-migrate"
+      description: "Build submitted via Travis CI"
+    notification_email: mikedld@mikedld.com
+    build_command_prepend: if [ "$TRAVIS_OS_NAME" = linux -a "$CC" = gcc ]; then cmake .. -DCMAKE_BUILD_TYPE=Debug; fi
+    build_command: make
+    branch_pattern: coverity_scan
+sudo: false
+before_script:
+  - |
+    if [ "$TRAVIS_OS_NAME" = linux ]; then
+      set -e
+
+      mkdir bin
+      ln -s /usr/bin/gcc-6 bin/gcc
+      ln -s /usr/bin/g++-6 bin/g++
+      ln -s /usr/bin/clang-3.8 bin/clang
+      ln -s /usr/bin/clang++-3.8 bin/clang++
+      export PATH=$PWD/bin:$PATH
+
+      wget --no-check-certificate https://cmake.org/files/v3.6/cmake-3.6.0-Linux-x86_64.tar.gz -O /tmp/cmake.tar.gz
+      tar xf /tmp/cmake.tar.gz
+      export PATH=$PWD/cmake-3.6.0-Linux-x86_64/bin:$PATH
+
+      wget --no-check-certificate https://github.com/open-source-parsers/jsoncpp/archive/1.7.4.tar.gz -O /tmp/jsoncpp.tar.gz
+      tar xf /tmp/jsoncpp.tar.gz
+      pushd jsoncpp-1.7.4
+      mkdir build
+      pushd build
+      cmake .. -DCMAKE_INSTALL_PREFIX=$PWD/prefix -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=14 -DJSONCPP_WITH_TESTS=OFF -DJSONCPP_WITH_POST_BUILD_UNITTEST=OFF -DJSONCPP_WITH_PKGCONFIG_SUPPORT=OFF -DJSONCPP_WITH_CMAKE_PACKAGE=ON
+      make install
+      export CMAKE_PREFIX_PATH=$PWD/prefix
+      popd
+      popd
+
+      set +e
+    fi
+  - mkdir obj
+  - cd obj
+script:
+  - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then cmake .. -DCMAKE_BUILD_TYPE=Release; fi
+  - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then make -j2; fi
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+    - os: linux
+      compiler: clang
+    - os: osx
+      compiler: clang
+      osx_image: xcode7.2
+      install:
+        - brew update
+        - brew install cmake
+        - brew install jsoncpp
