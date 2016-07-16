@@ -83,6 +83,15 @@ target_link_libraries(${PROJECT_NAME}
     Boost::system
     Boost::disable_autolinking
     Boost::dynamic_linking
-    jsoncpp_lib_static
     Threads::Threads
 )
+
+if(TARGET jsoncpp_lib_static)
+    target_link_libraries(${PROJECT_NAME}
+        jsoncpp_lib_static
+    )
+else()
+    target_link_libraries(${PROJECT_NAME}
+        jsoncpp_lib
+    )
+endif()
