@@ -9,17 +9,12 @@ Inspired by [old 'wontfix' Transmission ticket](https://trac.transmissionbt.com/
 Building
 ========
 
-You will need [boost](http://www.boost.org/) libraries installed. [JsonCpp](http://jsoncpp.sourceforge.net/) library is also used, but it's included as a submodule.
+You will need [boost](http://www.boost.org/) and [JsonCpp](http://jsoncpp.sourceforge.net/) libraries installed.
 
-Clone and init submodules:
+Clone, generate environment for your favorite build system (we use CMake as abstraction layer), then compile. For example,
 
     % git clone https://github.com/mikedld/bt-migrate.git
     % cd bt-migrate
-    % git submodule init
-    % git submodule update
-
-Generate environment for your favorite build system (we use CMake as abstraction layer), then compile. For example,
-
     % cmake -G 'Unix Makefiles'
     % make
 
