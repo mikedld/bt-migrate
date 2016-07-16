@@ -16,7 +16,7 @@
 
 #include "TorrentClient.h"
 
-#include "Exception.h"
+#include "Common/Exception.h"
 
 #include <boost/algorithm/string/predicate.hpp>
 

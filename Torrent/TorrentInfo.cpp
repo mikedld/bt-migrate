@@ -16,11 +16,11 @@
 
 #include "TorrentInfo.h"
 
-#include "BencodeCodec.h"
-#include "Exception.h"
-#include "IStructuredDataCodec.h"
-#include "Throw.h"
-#include "Util.h"
+#include "Codec/BencodeCodec.h"
+#include "Codec/IStructuredDataCodec.h"
+#include "Common/Exception.h"
+#include "Common/Throw.h"
+#include "Common/Util.h"
 
 #include <boost/filesystem/path.hpp>
 

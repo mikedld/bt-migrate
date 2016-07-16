@@ -16,19 +16,27 @@
 
 #pragma once
 
-#include "IForwardIterator.h"
 #include "ITorrentStateStore.h"
 
-class DebugTorrentStateIterator : public ITorrentStateIterator
+#include "Codec/BencodeCodec.h"
+
+class TransmissionStateStore : public ITorrentStateStore
 {
 public:
-    DebugTorrentStateIterator(ITorrentStateIteratorPtr decoratee);
-    virtual ~DebugTorrentStateIterator();
+    TransmissionStateStore();
+    virtual ~TransmissionStateStore();
 
 public:
-    // ITorrentStateIterator
-    virtual bool GetNext(Box& nextBox);
+    // ITorrentStateStore
+    virtual TorrentClient::Enum GetTorrentClient() const;
+
+    virtual boost::filesystem::path GuessDataDir(Intention::Enum intention) const;
+    virtual bool IsValidDataDir(boost::filesystem::path const& dataDir, Intention::Enum intention) const;
+
+    virtual ITorrentStateIteratorPtr Export(boost::filesystem::path const& dataDir,
+        IFileStreamProvider& fileStreamProvider) const;
+    virtual void Import(boost::filesystem::path const& dataDir, Box const& box, IFileStreamProvider& fileStreamProvider) const;
 
 private:
-    ITorrentStateIteratorPtr const m_decoratee;
+    BencodeCodec const m_bencoder;
 };
