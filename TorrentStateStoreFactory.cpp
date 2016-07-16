@@ -36,13 +36,13 @@ ITorrentStateStorePtr TorrentStateStoreFactory::CreateForClient(TorrentClient::E
     switch (client)
     {
     case TorrentClient::Deluge:
-        return ITorrentStateStorePtr(new DelugeStateStore());
+        return std::make_unique<DelugeStateStore>();
     case TorrentClient::rTorrent:
-        return ITorrentStateStorePtr(new rTorrentStateStore());
+        return std::make_unique<rTorrentStateStore>();
     case TorrentClient::Transmission:
-        return ITorrentStateStorePtr(new TransmissionStateStore());
+        return std::make_unique<TransmissionStateStore>();
     case TorrentClient::uTorrent:
-        return ITorrentStateStorePtr(new uTorrentStateStore());
+        return std::make_unique<uTorrentStateStore>();
     }
 
     throw Exception("Unknown torrent client");
@@ -70,5 +70,5 @@ ITorrentStateStorePtr TorrentStateStoreFactory::GuessByDataDir(fs::path const& d
         throw Exception("No torrent client matched data directory");
     }
 
-    return std::move(result);
+    return result;
 }

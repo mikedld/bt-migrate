@@ -50,7 +50,7 @@ ImportHelper::Result ImportHelper::Import(unsigned int threadCount)
     try
     {
         ITorrentStateIteratorPtr boxes = m_sourceStore->Export(m_sourceDataDir, m_fileStreamProvider);
-        boxes.reset(new DebugTorrentStateIterator(std::move(boxes)));
+        boxes = std::make_unique<DebugTorrentStateIterator>(std::move(boxes));
 
         std::vector<std::thread> threads;
         for (unsigned int i = 0; i < threadCount; ++i)
@@ -59,7 +59,7 @@ ImportHelper::Result ImportHelper::Import(unsigned int threadCount)
                 std::ref(result));
         }
 
-        for (std::thread& thread : threads)
+        for (auto& thread : threads)
         {
             thread.join();
         }

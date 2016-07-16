@@ -304,7 +304,7 @@ ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFile
 
     Logger(Logger::Debug) << "[Deluge] Loading " << Detail::FastResumeFilename;
 
-    JsonValuePtr fastResume(new Json::Value());
+    auto fastResume = std::make_unique<Json::Value>();
     {
         ReadStreamPtr const stream = fileStreamProvider.GetReadStream(stateDir / Detail::FastResumeFilename);
         BencodeCodec().Decode(*stream, *fastResume);
@@ -312,14 +312,13 @@ ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFile
 
     Logger(Logger::Debug) << "[Deluge] Loading " << Detail::StateFilename;
 
-    JsonValuePtr state(new Json::Value());
+    auto state = std::make_unique<Json::Value>();
     {
         ReadStreamPtr const stream = fileStreamProvider.GetReadStream(stateDir / Detail::StateFilename);
         PickleCodec().Decode(*stream, *state);
     }
 
-    return ITorrentStateIteratorPtr(new DelugeTorrentStateIterator(stateDir, std::move(fastResume), std::move(state),
-        fileStreamProvider));
+    return std::make_unique<DelugeTorrentStateIterator>(stateDir, std::move(fastResume), std::move(state), fileStreamProvider);
 }
 
 void DelugeStateStore::Import(fs::path const& /*dataDir*/, Box const& /*box*/,

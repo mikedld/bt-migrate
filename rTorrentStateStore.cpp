@@ -293,7 +293,7 @@ bool rTorrentStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum
 
 ITorrentStateIteratorPtr rTorrentStateStore::Export(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider) const
 {
-    return ITorrentStateIteratorPtr(new rTorrentTorrentStateIterator(dataDir, fileStreamProvider));
+    return std::make_unique<rTorrentTorrentStateIterator>(dataDir, fileStreamProvider);
 }
 
 void rTorrentStateStore::Import(fs::path const& /*dataDir*/, Box const& /*box*/,

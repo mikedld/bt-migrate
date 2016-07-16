@@ -99,7 +99,7 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
 
     Logger(Logger::Info) << upperCaseClientName << ": " << clientName << " (" << clientDataDir << ")";
 
-    return std::move(result);
+    return result;
 }
 
 } // namespace

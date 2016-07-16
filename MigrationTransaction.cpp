@@ -89,7 +89,7 @@ void MigrationTransaction::Commit()
 
 ReadStreamPtr MigrationTransaction::GetReadStream(fs::path const& path)
 {
-    std::unique_ptr<fs::ifstream> result(new fs::ifstream());
+    auto result = std::make_unique<fs::ifstream>();
     result->exceptions(std::ios_base::failbit | std::ios_base::badbit);
 
     try
@@ -113,7 +113,7 @@ WriteStreamPtr MigrationTransaction::GetWriteStream(fs::path const& path)
         "/dev/null";
 #endif
 
-    std::unique_ptr<fs::ofstream> result(new fs::ofstream());
+    auto result = std::make_unique<fs::ofstream>();
     result->exceptions(std::ios_base::failbit | std::ios_base::badbit);
 
     try

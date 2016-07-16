@@ -1,10 +1,13 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1)
 project(bt-migrate)
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(WIN32)
     add_definitions(-DUNICODE -D_UNICODE)
 else()
-    add_definitions(-std=c++11 -g -O2 -Wall -Wextra)
+    add_compile_options(-Wall -Wextra)
 endif()
 
 set(${PROJECT_NAME}_SOURCES

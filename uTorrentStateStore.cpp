@@ -265,13 +265,13 @@ ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& dataDir, IFi
 {
     Logger(Logger::Debug) << "[uTorrent] Loading " << Detail::ResumeFilename;
 
-    JsonValuePtr resume(new Json::Value());
+    auto resume = std::make_unique<Json::Value>();
     {
         ReadStreamPtr const stream = fileStreamProvider.GetReadStream(dataDir / Detail::ResumeFilename);
         BencodeCodec().Decode(*stream, *resume);
     }
 
-    return ITorrentStateIteratorPtr(new uTorrentTorrentStateIterator(dataDir, std::move(resume), fileStreamProvider));
+    return std::make_unique<uTorrentTorrentStateIterator>(dataDir, std::move(resume), fileStreamProvider);
 }
 
 void uTorrentStateStore::Import(fs::path const& /*dataDir*/, Box const& /*box*/,
