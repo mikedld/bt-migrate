@@ -69,6 +69,7 @@ set(${PROJECT_NAME}_HEADERS
 
 find_package(Boost 1.50 REQUIRED COMPONENTS date_time filesystem locale program_options system)
 find_package(jsoncpp REQUIRED)
+find_package(Threads REQUIRED)
 
 add_executable(${PROJECT_NAME}
     ${${PROJECT_NAME}_SOURCES}
@@ -83,4 +84,5 @@ target_link_libraries(${PROJECT_NAME}
     Boost::disable_autolinking
     Boost::dynamic_linking
     jsoncpp_lib_static
+    Threads::Threads
 )
