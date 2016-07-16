@@ -1,12 +1,12 @@
 #include "ImportHelper.h"
 
-#include "Box.h"
-#include "DebugTorrentStateIterator.h"
-#include "IFileStreamProvider.h"
-#include "IForwardIterator.h"
-#include "ITorrentStateStore.h"
-#include "Logger.h"
-#include "SignalHandler.h"
+#include "Common/IFileStreamProvider.h"
+#include "Common/IForwardIterator.h"
+#include "Common/Logger.h"
+#include "Common/SignalHandler.h"
+#include "Store/DebugTorrentStateIterator.h"
+#include "Store/ITorrentStateStore.h"
+#include "Torrent/Box.h"
 
 #include <boost/filesystem/path.hpp>
 

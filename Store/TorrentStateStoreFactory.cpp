@@ -17,10 +17,11 @@
 #include "TorrentStateStoreFactory.h"
 
 #include "DelugeStateStore.h"
-#include "Exception.h"
 #include "rTorrentStateStore.h"
 #include "TransmissionStateStore.h"
 #include "uTorrentStateStore.h"
+
+#include "Common/Exception.h"
 
 #include <boost/filesystem/path.hpp>
 

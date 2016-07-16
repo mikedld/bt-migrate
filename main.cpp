@@ -14,15 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-#include "Box.h"
-#include "Exception.h"
 #include "ImportHelper.h"
-#include "ITorrentStateStore.h"
-#include "Logger.h"
 #include "MigrationTransaction.h"
-#include "SignalHandler.h"
-#include "Throw.h"
-#include "TorrentStateStoreFactory.h"
+
+#include "Common/Exception.h"
+#include "Common/Logger.h"
+#include "Common/SignalHandler.h"
+#include "Common/Throw.h"
+#include "Store/ITorrentStateStore.h"
+#include "Store/TorrentStateStoreFactory.h"
+#include "Torrent/Box.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>

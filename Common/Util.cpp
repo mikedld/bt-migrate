@@ -23,8 +23,6 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/uuid/sha1.hpp>
 
-#include <json/value.h>
-
 #include <cctype>
 #include <cerrno>
 #include <cstdlib>

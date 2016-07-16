@@ -16,21 +16,20 @@
 
 #pragma once
 
-#include "Intention.h"
-#include "TorrentClient.h"
+#include "ITorrentStateStore.h"
 
-#include <memory>
+#include "Common/IForwardIterator.h"
 
-namespace boost { namespace filesystem { class path; } }
-
-class ITorrentStateStore;
-typedef std::unique_ptr<ITorrentStateStore> ITorrentStateStorePtr;
-
-class TorrentStateStoreFactory
+class DebugTorrentStateIterator : public ITorrentStateIterator
 {
 public:
-    TorrentStateStoreFactory();
+    DebugTorrentStateIterator(ITorrentStateIteratorPtr decoratee);
+    virtual ~DebugTorrentStateIterator();
 
-    ITorrentStateStorePtr CreateForClient(TorrentClient::Enum client) const;
-    ITorrentStateStorePtr GuessByDataDir(boost::filesystem::path const& dataDir, Intention::Enum intention) const;
+public:
+    // ITorrentStateIterator
+    virtual bool GetNext(Box& nextBox);
+
+private:
+    ITorrentStateIteratorPtr const m_decoratee;
 };

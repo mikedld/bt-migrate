@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "Exception.h"
-#include "Intention.h"
-#include "TorrentClient.h"
+#include "Common/Exception.h"
+#include "Torrent/Intention.h"
+#include "Torrent/TorrentClient.h"
 
 #include <memory>
 

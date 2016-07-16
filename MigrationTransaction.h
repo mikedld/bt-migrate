@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "IFileStreamProvider.h"
+#include "Common/IFileStreamProvider.h"
 
 #include <boost/filesystem/path.hpp>
 

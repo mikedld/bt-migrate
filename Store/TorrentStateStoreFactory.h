@@ -16,20 +16,21 @@
 
 #pragma once
 
-#include <string>
+#include "Torrent/Intention.h"
+#include "Torrent/TorrentClient.h"
+
+#include <memory>
 
 namespace boost { namespace filesystem { class path; } }
-namespace Json { class Value; }
 
-namespace Util
+class ITorrentStateStore;
+typedef std::unique_ptr<ITorrentStateStore> ITorrentStateStorePtr;
+
+class TorrentStateStoreFactory
 {
+public:
+    TorrentStateStoreFactory();
 
-long long StringToInt(std::string const& text);
-
-boost::filesystem::path GetPath(std::string const& nativePath);
-
-std::string CalculateSha1(std::string const& data);
-
-std::string BinaryToHex(std::string const& data);
-
-} // namespace Util
+    ITorrentStateStorePtr CreateForClient(TorrentClient::Enum client) const;
+    ITorrentStateStorePtr GuessByDataDir(boost::filesystem::path const& dataDir, Intention::Enum intention) const;
+};

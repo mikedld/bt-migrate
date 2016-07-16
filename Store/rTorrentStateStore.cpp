@@ -16,14 +16,14 @@
 
 #include "rTorrentStateStore.h"
 
-#include "BencodeCodec.h"
-#include "Box.h"
-#include "BoxHelper.h"
-#include "Exception.h"
-#include "IFileStreamProvider.h"
-#include "IForwardIterator.h"
-#include "Throw.h"
-#include "Util.h"
+#include "Codec/BencodeCodec.h"
+#include "Common/Exception.h"
+#include "Common/IFileStreamProvider.h"
+#include "Common/IForwardIterator.h"
+#include "Common/Throw.h"
+#include "Common/Util.h"
+#include "Torrent/Box.h"
+#include "Torrent/BoxHelper.h"
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem/fstream.hpp>

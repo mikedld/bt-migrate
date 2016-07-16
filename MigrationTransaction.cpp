@@ -16,9 +16,9 @@
 
 #include "MigrationTransaction.h"
 
-#include "Exception.h"
-#include "Logger.h"
-#include "Throw.h"
+#include "Common/Exception.h"
+#include "Common/Logger.h"
+#include "Common/Throw.h"
 
 #include <boost/date_time.hpp>
 #include <boost/filesystem/fstream.hpp>
