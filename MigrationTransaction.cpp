@@ -87,7 +87,7 @@ void MigrationTransaction::Commit()
     m_safePaths.clear();
 }
 
-ReadStreamPtr MigrationTransaction::GetReadStream(fs::path const& path)
+IReadStreamPtr MigrationTransaction::GetReadStream(fs::path const& path) const
 {
     auto result = std::make_unique<fs::ifstream>();
     result->exceptions(std::ios_base::failbit | std::ios_base::badbit);
@@ -104,7 +104,7 @@ ReadStreamPtr MigrationTransaction::GetReadStream(fs::path const& path)
     return std::move(result);
 }
 
-WriteStreamPtr MigrationTransaction::GetWriteStream(fs::path const& path)
+IWriteStreamPtr MigrationTransaction::GetWriteStream(fs::path const& path)
 {
     static std::string const BlackHoleFilename =
 #ifdef _WIN32

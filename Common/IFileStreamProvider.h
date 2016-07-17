@@ -21,14 +21,14 @@
 
 namespace boost { namespace filesystem { class path; } }
 
-typedef std::unique_ptr<std::istream> ReadStreamPtr;
-typedef std::unique_ptr<std::ostream> WriteStreamPtr;
+typedef std::unique_ptr<std::istream> IReadStreamPtr;
+typedef std::unique_ptr<std::ostream> IWriteStreamPtr;
 
 class IFileStreamProvider
 {
 public:
     virtual ~IFileStreamProvider() {}
 
-    virtual ReadStreamPtr GetReadStream(boost::filesystem::path const& path) = 0;
-    virtual WriteStreamPtr GetWriteStream(boost::filesystem::path const& path) = 0;
+    virtual IReadStreamPtr GetReadStream(boost::filesystem::path const& path) const = 0;
+    virtual IWriteStreamPtr GetWriteStream(boost::filesystem::path const& path) = 0;
 };

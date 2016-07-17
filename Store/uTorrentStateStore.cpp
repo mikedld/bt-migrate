@@ -121,7 +121,7 @@ fs::path GetChangedFilePath(Json::Value const& targets, std::size_t index)
 class uTorrentTorrentStateIterator : public ITorrentStateIterator
 {
 public:
-    uTorrentTorrentStateIterator(fs::path const& dataDir, JsonValuePtr resume, IFileStreamProvider& fileStreamProvider);
+    uTorrentTorrentStateIterator(fs::path const& dataDir, JsonValuePtr resume, IFileStreamProvider const& fileStreamProvider);
 
 public:
     // ITorrentStateIterator
@@ -130,7 +130,7 @@ public:
 private:
     fs::path const m_dataDir;
     JsonValuePtr const m_resume;
-    IFileStreamProvider& m_fileStreamProvider;
+    IFileStreamProvider const& m_fileStreamProvider;
     Json::Value::iterator m_torrentIt;
     Json::Value::iterator const m_torrentEnd;
     std::mutex m_torrentItMutex;
@@ -138,7 +138,7 @@ private:
 };
 
 uTorrentTorrentStateIterator::uTorrentTorrentStateIterator(fs::path const& dataDir, JsonValuePtr resume,
-    IFileStreamProvider& fileStreamProvider) :
+    IFileStreamProvider const& fileStreamProvider) :
     m_dataDir(dataDir),
     m_resume(std::move(resume)),
     m_fileStreamProvider(fileStreamProvider),
@@ -183,7 +183,7 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
     Box box;
 
     {
-        ReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(m_dataDir / torrentFilename);
+        IReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(m_dataDir / torrentFilename);
         box.Torrent = TorrentInfo::Decode(*stream, m_bencoder);
     }
 
@@ -261,13 +261,13 @@ bool uTorrentStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum
     return fs::is_regular_file(dataDir / Detail::ResumeFilename);
 }
 
-ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider) const
+ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& dataDir, IFileStreamProvider const& fileStreamProvider) const
 {
     Logger(Logger::Debug) << "[uTorrent] Loading " << Detail::ResumeFilename;
 
     auto resume = std::make_unique<Json::Value>();
     {
-        ReadStreamPtr const stream = fileStreamProvider.GetReadStream(dataDir / Detail::ResumeFilename);
+        IReadStreamPtr const stream = fileStreamProvider.GetReadStream(dataDir / Detail::ResumeFilename);
         BencodeCodec().Decode(*stream, *resume);
     }
 

@@ -276,7 +276,7 @@ bool TransmissionStateStore::IsValidDataDir(fs::path const& dataDir, Intention::
 }
 
 ITorrentStateIteratorPtr TransmissionStateStore::Export(fs::path const& /*dataDir*/,
-    IFileStreamProvider& /*fileStreamProvider*/) const
+    IFileStreamProvider const& /*fileStreamProvider*/) const
 {
     throw NotImplementedException(__func__);
 }
@@ -328,12 +328,12 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
     std::string const baseName = resume[RField::Name].asString() + '.' + box.Torrent.GetInfoHash().substr(0, 16);
 
     {
-        WriteStreamPtr const stream = fileStreamProvider.GetWriteStream(Detail::GetTorrentFilePath(dataDir, baseName));
+        IWriteStreamPtr const stream = fileStreamProvider.GetWriteStream(Detail::GetTorrentFilePath(dataDir, baseName));
         box.Torrent.Encode(*stream, m_bencoder);
     }
 
     {
-        WriteStreamPtr const stream = fileStreamProvider.GetWriteStream(Detail::GetResumeFilePath(dataDir, baseName));
+        IWriteStreamPtr const stream = fileStreamProvider.GetWriteStream(Detail::GetResumeFilePath(dataDir, baseName));
         m_bencoder.Encode(*stream, resume);
     }
 }

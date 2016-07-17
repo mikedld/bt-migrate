@@ -44,7 +44,7 @@ public:
     virtual bool IsValidDataDir(boost::filesystem::path const& dataDir, Intention::Enum intention) const = 0;
 
     virtual ITorrentStateIteratorPtr Export(boost::filesystem::path const& dataDir,
-        IFileStreamProvider& fileStreamProvider) const = 0;
+        IFileStreamProvider const& fileStreamProvider) const = 0;
     virtual void Import(boost::filesystem::path const& dataDir, Box const& box,
         IFileStreamProvider& fileStreamProvider) const = 0;
 };

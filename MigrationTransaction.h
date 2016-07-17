@@ -34,8 +34,8 @@ public:
 
 public:
     // IFileStreamProvider
-    virtual ReadStreamPtr GetReadStream(boost::filesystem::path const& path);
-    virtual WriteStreamPtr GetWriteStream(boost::filesystem::path const& path);
+    virtual IReadStreamPtr GetReadStream(boost::filesystem::path const& path) const;
+    virtual IWriteStreamPtr GetWriteStream(boost::filesystem::path const& path);
 
 private:
     boost::filesystem::path GetTemporaryPath(boost::filesystem::path const& path) const;

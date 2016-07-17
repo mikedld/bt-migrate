@@ -85,7 +85,7 @@ namespace
 class rTorrentTorrentStateIterator : public ITorrentStateIterator
 {
 public:
-    rTorrentTorrentStateIterator(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider);
+    rTorrentTorrentStateIterator(fs::path const& dataDir, IFileStreamProvider const& fileStreamProvider);
 
 public:
     // ITorrentStateIterator
@@ -93,7 +93,7 @@ public:
 
 private:
     fs::path const m_dataDir;
-    IFileStreamProvider& m_fileStreamProvider;
+    IFileStreamProvider const& m_fileStreamProvider;
     fs::directory_iterator m_directoryIt;
     fs::directory_iterator const m_directoryEnd;
     std::mutex m_directoryItMutex;
@@ -101,7 +101,7 @@ private:
 };
 
 
-rTorrentTorrentStateIterator::rTorrentTorrentStateIterator(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider) :
+rTorrentTorrentStateIterator::rTorrentTorrentStateIterator(fs::path const& dataDir, IFileStreamProvider const& fileStreamProvider) :
     m_dataDir(dataDir),
     m_fileStreamProvider(fileStreamProvider),
     m_directoryIt(m_dataDir),
@@ -150,7 +150,7 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
         fs::path torrentFilePath = stateFilePath;
         torrentFilePath.replace_extension(fs::path());
 
-        ReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(torrentFilePath);
+        IReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(torrentFilePath);
         box.Torrent = TorrentInfo::Decode(*stream, m_bencoder);
 
         std::string const infoHashFromFilename = torrentFilePath.stem().string();
@@ -162,13 +162,13 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
 
     Json::Value state;
     {
-        ReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(stateFilePath);
+        IReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(stateFilePath);
         m_bencoder.Decode(*stream, state);
     }
 
     Json::Value resume;
     {
-        ReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(libTorrentStateFilePath);
+        IReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(libTorrentStateFilePath);
         m_bencoder.Decode(*stream, resume);
     }
 
@@ -291,7 +291,7 @@ bool rTorrentStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum
     return false;
 }
 
-ITorrentStateIteratorPtr rTorrentStateStore::Export(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider) const
+ITorrentStateIteratorPtr rTorrentStateStore::Export(fs::path const& dataDir, IFileStreamProvider const& fileStreamProvider) const
 {
     return std::make_unique<rTorrentTorrentStateIterator>(dataDir, fileStreamProvider);
 }

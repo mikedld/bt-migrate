@@ -137,7 +137,7 @@ class DelugeTorrentStateIterator : public ITorrentStateIterator
 {
 public:
     DelugeTorrentStateIterator(fs::path const& stateDir, JsonValuePtr fastResume, JsonValuePtr state,
-        IFileStreamProvider& fileStreamProvider);
+        IFileStreamProvider const& fileStreamProvider);
 
 public:
     // ITorrentStateIterator
@@ -147,7 +147,7 @@ private:
     fs::path const m_stateDir;
     JsonValuePtr const m_fastResume;
     JsonValuePtr const m_state;
-    IFileStreamProvider& m_fileStreamProvider;
+    IFileStreamProvider const& m_fileStreamProvider;
     Json::Value::iterator m_stateIt;
     Json::Value::iterator const m_stateEnd;
     std::mutex m_stateItMutex;
@@ -155,7 +155,7 @@ private:
 };
 
 DelugeTorrentStateIterator::DelugeTorrentStateIterator(fs::path const& stateDir, JsonValuePtr fastResume, JsonValuePtr state,
-    IFileStreamProvider& fileStreamProvider) :
+    IFileStreamProvider const& fileStreamProvider) :
     m_stateDir(stateDir),
     m_fastResume(std::move(fastResume)),
     m_state(std::move(state)),
@@ -195,7 +195,7 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
     Box box;
 
     {
-        ReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(m_stateDir / (infoHash + ".torrent"));
+        IReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(m_stateDir / (infoHash + ".torrent"));
         box.Torrent = TorrentInfo::Decode(*stream, m_bencoder);
     }
 
@@ -298,7 +298,7 @@ bool DelugeStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum /
         fs::is_regular_file(stateDir / Detail::StateFilename);
 }
 
-ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFileStreamProvider& fileStreamProvider) const
+ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFileStreamProvider const& fileStreamProvider) const
 {
     fs::path const stateDir = Detail::GetStateDir(dataDir);
 
@@ -306,7 +306,7 @@ ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFile
 
     auto fastResume = std::make_unique<Json::Value>();
     {
-        ReadStreamPtr const stream = fileStreamProvider.GetReadStream(stateDir / Detail::FastResumeFilename);
+        IReadStreamPtr const stream = fileStreamProvider.GetReadStream(stateDir / Detail::FastResumeFilename);
         BencodeCodec().Decode(*stream, *fastResume);
     }
 
@@ -314,7 +314,7 @@ ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFile
 
     auto state = std::make_unique<Json::Value>();
     {
-        ReadStreamPtr const stream = fileStreamProvider.GetReadStream(stateDir / Detail::StateFilename);
+        IReadStreamPtr const stream = fileStreamProvider.GetReadStream(stateDir / Detail::StateFilename);
         PickleCodec().Decode(*stream, *state);
     }
 
