@@ -20,14 +20,5 @@ add_library(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     BtMigrateCommon
+    JsonCppLib
 )
-
-if(TARGET jsoncpp_lib_static)
-    target_link_libraries(${PROJECT_NAME}
-        jsoncpp_lib_static
-    )
-else()
-    target_link_libraries(${PROJECT_NAME}
-        jsoncpp_lib
-    )
-endif()

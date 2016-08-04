@@ -32,15 +32,6 @@ target_link_libraries(${PROJECT_NAME}
     Boost::filesystem
     Boost::disable_autolinking
     Boost::dynamic_linking
+    JsonCppLib
     Threads::Threads
 )
-
-if(TARGET jsoncpp_lib_static)
-    target_link_libraries(${PROJECT_NAME}
-        jsoncpp_lib_static
-    )
-else()
-    target_link_libraries(${PROJECT_NAME}
-        jsoncpp_lib
-    )
-endif()

@@ -5,8 +5,16 @@ find_package(Boost 1.50 REQUIRED COMPONENTS date_time filesystem locale program_
 find_package(jsoncpp REQUIRED)
 find_package(Threads REQUIRED)
 
+add_library(JsonCppLib INTERFACE)
+if(TARGET jsoncpp_lib_static)
+    set_property(TARGET JsonCppLib PROPERTY INTERFACE_LINK_LIBRARIES jsoncpp_lib_static)
+else()
+    set_property(TARGET JsonCppLib PROPERTY INTERFACE_LINK_LIBRARIES jsoncpp_lib)
+endif()
+
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(WIN32)
     add_definitions(-DUNICODE -D_UNICODE)
