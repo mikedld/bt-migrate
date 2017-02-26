@@ -43,7 +43,7 @@ Json::Value DecodeOneValue(std::istream& stream)
         {
             buffer += c;
         }
-        result = Util::StringToInt(buffer);
+        result = static_cast<Json::Value::Int64>(Util::StringToInt(buffer));
         break;
 
     case 'l':

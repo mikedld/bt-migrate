@@ -302,7 +302,7 @@ void PickleCodec::Decode(std::istream& stream, Json::Value& root) const
             }
             else
             {
-                stack.push(StackItem(code, Util::StringToInt(buffer)));
+                stack.push(StackItem(code, static_cast<Json::Value::Int64>(Util::StringToInt(buffer))));
             }
             break;
 
@@ -317,7 +317,7 @@ void PickleCodec::Decode(std::istream& stream, Json::Value& root) const
             {
                 buffer.resize(buffer.size() - 1);
             }
-            stack.push(StackItem(code, Util::StringToInt(buffer)));
+            stack.push(StackItem(code, static_cast<Json::Value::Int64>(Util::StringToInt(buffer))));
             break;
 
         case STRING:
