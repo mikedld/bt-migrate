@@ -15,6 +15,7 @@ Clone, generate environment for your favorite build system (we use CMake as abst
 
     % git clone https://github.com/mikedld/bt-migrate.git
     % cd bt-migrate
+    % git submodule update --init --force
     % cmake -G 'Unix Makefiles'
     % make
 
