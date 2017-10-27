@@ -31,9 +31,9 @@ namespace fs = boost::filesystem;
 namespace
 {
 
-std::string CalculateInfoHash(Json::Value const& torrent)
+std::string CalculateInfoHash(ojson const& torrent)
 {
-    if (!torrent.isMember("info"))
+    if (!torrent.has_member("info"))
     {
         throw Exception("Torrent file is missing info dictionary");
     }
@@ -52,7 +52,7 @@ TorrentInfo::TorrentInfo() :
     //
 }
 
-TorrentInfo::TorrentInfo(Json::Value const& torrent) :
+TorrentInfo::TorrentInfo(ojson const& torrent) :
     m_torrent(torrent),
     m_infoHash(CalculateInfoHash(m_torrent))
 {
@@ -73,17 +73,17 @@ std::uint64_t TorrentInfo::GetTotalSize() const
 {
     std::uint64_t result = 0;
 
-    Json::Value const& info = m_torrent["info"];
+    ojson const& info = m_torrent["info"];
 
-    if (!info.isMember("files"))
+    if (!info.has_member("files"))
     {
-        result += info["length"].asUInt64();
+        result += info["length"].as_uinteger();
     }
     else
     {
-        for (Json::Value const& file : info["files"])
+        for (ojson const& file : info["files"].array_range())
         {
-            result += file["length"].asUInt64();
+            result += file["length"].as_uinteger();
         }
     }
 
@@ -92,25 +92,25 @@ std::uint64_t TorrentInfo::GetTotalSize() const
 
 std::uint32_t TorrentInfo::GetPieceSize() const
 {
-    Json::Value const& info = m_torrent["info"];
+    ojson const& info = m_torrent["info"];
 
-    return info["piece length"].asUInt();
+    return info["piece length"].as_uinteger();
 }
 
 std::string TorrentInfo::GetName() const
 {
-    Json::Value const& info = m_torrent["info"];
+    ojson const& info = m_torrent["info"];
 
-    return info["name"].asString();
+    return info["name"].as_string();
 }
 
 fs::path TorrentInfo::GetFilePath(std::size_t fileIndex) const
 {
     fs::path result;
 
-    Json::Value const& info = m_torrent["info"];
+    ojson const& info = m_torrent["info"];
 
-    if (!info.isMember("files"))
+    if (!info.has_member("files"))
     {
         if (fileIndex != 0)
         {
@@ -121,16 +121,16 @@ fs::path TorrentInfo::GetFilePath(std::size_t fileIndex) const
     }
     else
     {
-        Json::Value const& files = info["files"];
+        ojson const& files = info["files"];
 
         if (fileIndex >= files.size())
         {
             Throw<Exception>() << "Torrent file #" << fileIndex << " does not exist";
         }
 
-        for (Json::Value const& pathPart : files[static_cast<Json::ArrayIndex>(fileIndex)]["path"])
+        for (ojson const& pathPart : files[fileIndex]["path"].array_range())
         {
-            result /= pathPart.asString();
+            result /= pathPart.as_string();
         }
     }
 
@@ -139,7 +139,7 @@ fs::path TorrentInfo::GetFilePath(std::size_t fileIndex) const
 
 TorrentInfo TorrentInfo::Decode(std::istream& stream, IStructuredDataCodec const& codec)
 {
-    Json::Value torrent;
+    ojson torrent;
     codec.Decode(stream, torrent);
     return TorrentInfo(torrent);
 }

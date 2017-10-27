@@ -32,6 +32,8 @@
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
+#include <jsoncons/json.hpp>
+
 #include <mutex>
 
 namespace fs = boost::filesystem;
@@ -160,31 +162,31 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
         }
     }
 
-    Json::Value state;
+    ojson state;
     {
         IReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(stateFilePath);
         m_bencoder.Decode(*stream, state);
     }
 
-    Json::Value resume;
+    ojson resume;
     {
         IReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(libTorrentStateFilePath);
         m_bencoder.Decode(*stream, resume);
     }
 
-    box.AddedAt = state[SField::TimestampStarted].asInt();
-    box.CompletedAt = state[SField::TimestampFinished].asInt();
-    box.IsPaused = state[SField::Priority].asInt() == 0;
-    box.UploadedSize = state[SField::TotalUploaded].asUInt64();
-    box.SavePath = Util::GetPath(state[SField::Directory].asString());
+    box.AddedAt = state[SField::TimestampStarted].as_integer();
+    box.CompletedAt = state[SField::TimestampFinished].as_integer();
+    box.IsPaused = state[SField::Priority].as_integer() == 0;
+    box.UploadedSize = state[SField::TotalUploaded].as_uinteger();
+    box.SavePath = Util::GetPath(state[SField::Directory].as_string());
     box.BlockSize = box.Torrent.GetPieceSize();
 
     box.Files.reserve(resume[RField::Files].size());
-    for (Json::Value const& file : resume[RField::Files])
+    for (ojson const& file : resume[RField::Files].array_range())
     {
         namespace ff = Detail::ResumeField::FilesField;
 
-        int const filePriority = file[ff::Priority].asInt();
+        int const filePriority = file[ff::Priority].as_integer();
 
         Box::FileInfo boxFile;
         boxFile.DoNotDownload = filePriority == Detail::DoNotDownloadPriority;
@@ -196,7 +198,7 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
     std::uint64_t const totalSize = box.Torrent.GetTotalSize();
     std::uint64_t const totalBlockCount = (totalSize + box.BlockSize - 1) / box.BlockSize;
     box.ValidBlocks.reserve(totalBlockCount + 8);
-    for (unsigned char const c : resume[RField::Bitfield].asString())
+    for (unsigned char const c : resume[RField::Bitfield].as_string())
     {
         for (int i = 7; i >= 0; --i)
         {

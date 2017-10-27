@@ -28,7 +28,7 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/format.hpp>
 
-#include <json/value.h>
+#include <jsoncons/json.hpp>
 
 #include <algorithm>
 #include <cstdlib>
@@ -123,34 +123,34 @@ fs::path GetTorrentFilePath(fs::path const& dataDir, std::string const& basename
 namespace
 {
 
-Json::Value ToStoreDoNotDownload(std::vector<Box::FileInfo> const& files)
+ojson ToStoreDoNotDownload(std::vector<Box::FileInfo> const& files)
 {
-    Json::Value result = Json::arrayValue;
+    ojson result = ojson::array();
     for (Box::FileInfo const& file : files)
     {
-        result.append(file.DoNotDownload ? 1 : 0);
+        result.add(file.DoNotDownload ? 1 : 0);
     }
     return result;
 }
 
-Json::Value ToStorePriority(std::vector<Box::FileInfo> const& files)
+ojson ToStorePriority(std::vector<Box::FileInfo> const& files)
 {
-    Json::Value result = Json::arrayValue;
+    ojson result = ojson::array();
     for (Box::FileInfo const& file : files)
     {
-        result.append(BoxHelper::Priority::ToStore(file.Priority, Detail::MinPriority, Detail::MaxPriority));
+        result.add(BoxHelper::Priority::ToStore(file.Priority, Detail::MinPriority, Detail::MaxPriority));
     }
     return result;
 }
 
-Json::Value ToStoreProgress(std::vector<bool> const& validBlocks, std::uint32_t blockSize, std::uint64_t totalSize,
+ojson ToStoreProgress(std::vector<bool> const& validBlocks, std::uint32_t blockSize, std::uint64_t totalSize,
     std::size_t fileCount)
 {
     namespace RPField = Detail::ResumeField::ProgressField;
 
     std::size_t const validBlockCount = std::count(validBlocks.begin(), validBlocks.end(), true);
 
-    Json::Value result;
+    ojson result = ojson::object();
     if (validBlockCount == validBlocks.size())
     {
         result[RPField::Blocks] = "all";
@@ -193,32 +193,32 @@ Json::Value ToStoreProgress(std::vector<bool> const& validBlocks, std::uint32_t 
         result[RPField::Blocks] = trBlocks;
     }
 
-    Json::Int64 const timeChecked = std::time(nullptr);
-    result[RPField::TimeChecked] = Json::arrayValue;
+    std::int64_t const timeChecked = std::time(nullptr);
+    result[RPField::TimeChecked] = ojson::array();
     for (std::size_t i = 0; i < fileCount; ++i)
     {
-        result[RPField::TimeChecked].append(timeChecked);
+        result[RPField::TimeChecked].add(timeChecked);
     }
 
     return result;
 }
 
-Json::Value ToStoreRatioLimit(Box::LimitInfo const& boxLimit)
+ojson ToStoreRatioLimit(Box::LimitInfo const& boxLimit)
 {
     namespace RRLField = Detail::ResumeField::RatioLimitField;
 
-    Json::Value result;
+    ojson result = ojson::object();
     result[RRLField::RatioMode] = boxLimit.Mode == Box::LimitMode::Inherit ? 0 :
         (boxLimit.Mode == Box::LimitMode::Enabled ? 1 : 2);
     result[RRLField::RatioLimit] = boost::str(boost::format("%.06f") % boxLimit.Value);
     return result;
 }
 
-Json::Value ToStoreSpeedLimit(Box::LimitInfo const& boxLimit)
+ojson ToStoreSpeedLimit(Box::LimitInfo const& boxLimit)
 {
     namespace RSLField = Detail::ResumeField::SpeedLimitField;
 
-    Json::Value result;
+    ojson result = ojson::object();
     result[RSLField::SpeedBps] = static_cast<int>(boxLimit.Value);
     result[RSLField::UseGlobalSpeedLimit] = boxLimit.Mode != Box::LimitMode::Disabled ? 1 : 0;
     result[RSLField::UseSpeedLimit] = boxLimit.Mode == Box::LimitMode::Enabled ? 1 : 0;
@@ -301,18 +301,18 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
         }
     }
 
-    Json::Value resume;
+    ojson resume = ojson::object();
 
     //resume["activity-date"] = 0;
-    resume[RField::AddedDate] = static_cast<Json::Int64>(box.AddedAt);
+    resume[RField::AddedDate] = static_cast<std::int64_t>(box.AddedAt);
     //resume["bandwidth-priority"] = 0;
-    resume[RField::Corrupt] = static_cast<Json::UInt64>(box.CorruptedSize);
+    resume[RField::Corrupt] = box.CorruptedSize;
     resume[RField::Destination] = box.SavePath.parent_path().string();
     resume[RField::Dnd] = ToStoreDoNotDownload(box.Files);
-    resume[RField::DoneDate] = static_cast<Json::Int64>(box.CompletedAt);
-    resume[RField::Downloaded] = static_cast<Json::UInt64>(box.DownloadedSize);
+    resume[RField::DoneDate] = static_cast<std::int64_t>(box.CompletedAt);
+    resume[RField::Downloaded] = box.DownloadedSize;
     //resume["downloading-time-seconds"] = 0;
-    //resume["idle-limit"] = Json::objectValue;
+    //resume["idle-limit"] = ojson::object();
     //resume["max-peers"] = 5;
     resume[RField::Name] = box.SavePath.filename().string();
     resume[RField::Paused] = box.IsPaused ? 1 : 0;
@@ -323,9 +323,9 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
     //resume["seeding-time-seconds"] = 0;
     resume[RField::SpeedLimitDown] = ToStoreSpeedLimit(box.DownloadSpeedLimit);
     resume[RField::SpeedLimitUp] = ToStoreSpeedLimit(box.UploadSpeedLimit);
-    resume[RField::Uploaded] = static_cast<Json::UInt64>(box.UploadedSize);
+    resume[RField::Uploaded] = box.UploadedSize;
 
-    std::string const baseName = resume[RField::Name].asString() + '.' + box.Torrent.GetInfoHash().substr(0, 16);
+    std::string const baseName = resume[RField::Name].as_string() + '.' + box.Torrent.GetInfoHash().substr(0, 16);
 
     {
         IWriteStreamPtr const stream = fileStreamProvider.GetWriteStream(Detail::GetTorrentFilePath(dataDir, baseName));

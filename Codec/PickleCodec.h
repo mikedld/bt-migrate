@@ -26,6 +26,6 @@ public:
 
 public:
     // IStructuredDataCodec
-    virtual void Decode(std::istream& stream, Json::Value& root) const;
-    virtual void Encode(std::ostream& stream, Json::Value const& root) const;
+    virtual void Decode(std::istream& stream, ojson& root) const;
+    virtual void Encode(std::ostream& stream, ojson const& root) const;
 };

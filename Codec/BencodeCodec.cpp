@@ -20,18 +20,15 @@
 #include "Common/Throw.h"
 #include "Common/Util.h"
 
-#include <json/value.h>
-#include <json/writer.h>
-
 #include <iostream>
 #include <sstream>
 
 namespace
 {
 
-Json::Value DecodeOneValue(std::istream& stream)
+ojson DecodeOneValue(std::istream& stream)
 {
-    Json::Value result;
+    ojson result;
 
     std::string buffer;
     char c = stream.get();
@@ -43,26 +40,26 @@ Json::Value DecodeOneValue(std::istream& stream)
         {
             buffer += c;
         }
-        result = static_cast<Json::Value::Int64>(Util::StringToInt(buffer));
+        result = Util::StringToInt(buffer);
         break;
 
     case 'l':
-        result = Json::arrayValue;
+        result = ojson::array();
         while (stream.get() != 'e')
         {
             stream.unget();
-            result.append(DecodeOneValue(stream));
+            result.add(DecodeOneValue(stream));
         }
         break;
 
     case 'd':
-        result = Json::objectValue;
+        result = ojson::object();
         while (stream.get() != 'e')
         {
             stream.unget();
-            Json::Value key = DecodeOneValue(stream);
-            Json::Value value = DecodeOneValue(stream);
-            result[key.asString()] = value;
+            ojson key = DecodeOneValue(stream);
+            ojson value = DecodeOneValue(stream);
+            result.set(key.as_string(), value);
         }
         break;
 
@@ -94,48 +91,47 @@ Json::Value DecodeOneValue(std::istream& stream)
     return result;
 }
 
-void EncodeOneValue(std::ostream& stream, Json::Value const& value)
+void EncodeOneValue(std::ostream& stream, ojson const& value)
 {
-    switch (value.type())
+    if (value.is_object())
     {
-    case Json::objectValue:
         stream << 'd';
-        for (auto it = value.begin(), end = value.end(); it != end; ++it)
+        for (auto const& item : value.object_range())
         {
-            EncodeOneValue(stream, it.key());
-            EncodeOneValue(stream, *it);
+            EncodeOneValue(stream, item.key());
+            EncodeOneValue(stream, item.value());
         }
         stream << 'e';
-        break;
-
-    case Json::arrayValue:
+    }
+    else if (value.is_array())
+    {
         stream << 'l';
-        for (auto it = value.begin(), end = value.end(); it != end; ++it)
+        for (auto const& item : value.array_range())
         {
-            EncodeOneValue(stream, *it);
+            EncodeOneValue(stream, item);
         }
         stream << 'e';
-        break;
-
-    case Json::stringValue:
-        stream << value.asString().size();
+    }
+    else if (value.is_string())
+    {
+        stream << value.as_string().size();
         stream << ':';
-        stream << value.asString();
-        break;
-
-    case Json::intValue:
+        stream << value.as_string();
+    }
+    else if (value.is_integer())
+    {
         stream << 'i';
-        stream << value.asInt64();
+        stream << value.as_integer();
         stream << 'e';
-        break;
-
-    case Json::uintValue:
+    }
+    else if (value.is_uinteger())
+    {
         stream << 'i';
-        stream << value.asUInt64();
+        stream << value.as_uinteger();
         stream << 'e';
-        break;
-
-    default:
+    }
+    else
+    {
         Throw<Exception>() << "Unable to encode value: " << value;
     }
 }
@@ -152,12 +148,12 @@ BencodeCodec::~BencodeCodec()
     //
 }
 
-void BencodeCodec::Decode(std::istream& stream, Json::Value& root) const
+void BencodeCodec::Decode(std::istream& stream, ojson& root) const
 {
     root = DecodeOneValue(stream);
 }
 
-void BencodeCodec::Encode(std::ostream& stream, Json::Value const& root) const
+void BencodeCodec::Encode(std::ostream& stream, ojson const& root) const
 {
     EncodeOneValue(stream, root);
 }

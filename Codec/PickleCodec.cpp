@@ -20,9 +20,6 @@
 #include "Common/Throw.h"
 #include "Common/Util.h"
 
-#include <json/value.h>
-#include <json/writer.h>
-
 #include <iostream>
 #include <map>
 #include <stack>
@@ -103,7 +100,7 @@ struct StackItem
 
     }
 
-    explicit StackItem(char type, Json::Value const& value = Json::Value()) :
+    explicit StackItem(char type, ojson const& value = ojson()) :
         Type(type),
         Value(value)
     {
@@ -111,7 +108,7 @@ struct StackItem
     }
 
     char Type;
-    Json::Value Value;
+    ojson Value;
 };
 
 std::string UnicodeCodePointToUtf8(unsigned int code)
@@ -255,7 +252,7 @@ PickleCodec::~PickleCodec()
     //
 }
 
-void PickleCodec::Decode(std::istream& stream, Json::Value& root) const
+void PickleCodec::Decode(std::istream& stream, ojson& root) const
 {
     std::stack<StackItem> stack;
     std::map<long long, StackItem> memo;
@@ -302,7 +299,7 @@ void PickleCodec::Decode(std::istream& stream, Json::Value& root) const
             }
             else
             {
-                stack.push(StackItem(code, static_cast<Json::Value::Int64>(Util::StringToInt(buffer))));
+                stack.push(StackItem(code, Util::StringToInt(buffer)));
             }
             break;
 
@@ -317,7 +314,7 @@ void PickleCodec::Decode(std::istream& stream, Json::Value& root) const
             {
                 buffer.resize(buffer.size() - 1);
             }
-            stack.push(StackItem(code, static_cast<Json::Value::Int64>(Util::StringToInt(buffer))));
+            stack.push(StackItem(code, Util::StringToInt(buffer)));
             break;
 
         case STRING:
@@ -336,47 +333,45 @@ void PickleCodec::Decode(std::istream& stream, Json::Value& root) const
             // fall through
 
         case DICT:
-            currentItem = StackItem(code, Json::objectValue);
+            currentItem = StackItem(code, ojson::object());
             while (stack.top().Type != MARK)
             {
                 currentItem2 = stack.top();
                 stack.pop();
-                currentItem.Value[stack.top().Value.asString()] = currentItem2.Value;
+                currentItem.Value.set(stack.top().Value.as_string(), currentItem2.Value);
                 stack.pop();
             }
-            stack.pop();
-            stack.push(currentItem);
+            stack.top() = currentItem;
             break;
 
         case LIST:
         case TUPLE:
-            currentItem = StackItem(code, Json::arrayValue);
+            currentItem = StackItem(code, ojson::array());
             while (stack.top().Type != MARK)
             {
-                currentItem.Value.append(stack.top().Value);
+                currentItem.Value.add(stack.top().Value);
                 stack.pop();
             }
-            stack.pop();
-            stack.push(currentItem);
+            stack.top() = currentItem;
             break;
 
         case NONE:
-            stack.push(StackItem(code, Json::nullValue));
+            stack.push(StackItem(code, ojson::null()));
             break;
 
         case EMPTY_DICT:
-            stack.push(StackItem(code, Json::objectValue));
+            stack.push(StackItem(code, ojson::object()));
             break;
 
         case EMPTY_LIST:
         case EMPTY_TUPLE:
-            stack.push(StackItem(code, Json::arrayValue));
+            stack.push(StackItem(code, ojson::array()));
             break;
 
         case APPEND:
             currentItem = stack.top();
             stack.pop();
-            stack.top().Value.append(currentItem.Value);
+            stack.top().Value.add(currentItem.Value);
             break;
 
         case BUILD:
@@ -400,7 +395,7 @@ void PickleCodec::Decode(std::istream& stream, Json::Value& root) const
             stack.pop();
             currentItem2 = stack.top();
             stack.pop();
-            stack.top().Value[currentItem2.Value.asString()] = currentItem.Value;
+            stack.top().Value.set(currentItem2.Value.as_string(), currentItem.Value);
             break;
 
         // case PERSID:
@@ -432,7 +427,7 @@ void PickleCodec::Decode(std::istream& stream, Json::Value& root) const
     }
 }
 
-void PickleCodec::Encode(std::ostream& /*stream*/, Json::Value const& /*root*/) const
+void PickleCodec::Encode(std::ostream& /*stream*/, ojson const& /*root*/) const
 {
     throw NotImplementedException(__func__);
 }

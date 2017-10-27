@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <json/value.h>
+#include <jsoncons/json.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -24,6 +24,7 @@
 #include <string>
 
 namespace boost { namespace filesystem { class path; } }
+using jsoncons::ojson;
 
 class IStructuredDataCodec;
 
@@ -31,7 +32,7 @@ class TorrentInfo
 {
 public:
     TorrentInfo();
-    TorrentInfo(Json::Value const& torrent);
+    TorrentInfo(ojson const& torrent);
 
     void Encode(std::ostream& stream, IStructuredDataCodec const& codec) const;
 
@@ -44,6 +45,6 @@ public:
     static TorrentInfo Decode(std::istream& stream, IStructuredDataCodec const& codec);
 
 private:
-    Json::Value m_torrent;
+    ojson m_torrent;
     std::string m_infoHash;
 };

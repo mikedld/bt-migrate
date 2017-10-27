@@ -30,8 +30,7 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
-#include <json/value.h>
-#include <json/writer.h>
+#include <jsoncons/json.hpp>
 
 #include <cstdlib>
 #include <limits>
@@ -97,32 +96,30 @@ fs::path GetStateDir(fs::path const& dataDir)
 namespace
 {
 
-typedef std::unique_ptr<Json::Value> JsonValuePtr;
-
-Box::LimitInfo FromStoreRatioLimit(Json::Value const& enabled, Json::Value const& storeLimit)
+Box::LimitInfo FromStoreRatioLimit(ojson const& enabled, ojson const& storeLimit)
 {
     Box::LimitInfo result;
-    result.Mode = enabled.asBool() ? Box::LimitMode::Enabled : Box::LimitMode::Inherit;
-    result.Value = storeLimit.asDouble();
+    result.Mode = enabled.as_bool() ? Box::LimitMode::Enabled : Box::LimitMode::Inherit;
+    result.Value = storeLimit.as_double();
     return result;
 }
 
-Box::LimitInfo FromStoreSpeedLimit(Json::Value const& storeLimit)
+Box::LimitInfo FromStoreSpeedLimit(ojson const& storeLimit)
 {
     Box::LimitInfo result;
-    result.Mode = storeLimit.asInt() > 0 ? Box::LimitMode::Enabled :
-        (storeLimit.asInt() == 0 ? Box::LimitMode::Disabled : Box::LimitMode::Inherit);
-    result.Value = std::max(0, storeLimit.asInt() * 1000);
+    result.Mode = storeLimit.as_integer() > 0 ? Box::LimitMode::Enabled :
+        (storeLimit.as_integer() == 0 ? Box::LimitMode::Disabled : Box::LimitMode::Inherit);
+    result.Value = std::max<decltype(result.Value)>(0, storeLimit.as_integer() * 1000);
     return result;
 }
 
-fs::path GetChangedFilePath(Json::Value const& mappedFiles, Json::ArrayIndex index)
+fs::path GetChangedFilePath(ojson const& mappedFiles, std::size_t index)
 {
     fs::path result;
 
-    if (!mappedFiles.isNull())
+    if (!mappedFiles.is_null())
     {
-        fs::path const path = Util::GetPath(mappedFiles[index].asString());
+        fs::path const path = Util::GetPath(mappedFiles[index].as_string());
         fs::path::iterator pathIt = path.begin();
         while (++pathIt != path.end())
         {
@@ -136,7 +133,7 @@ fs::path GetChangedFilePath(Json::Value const& mappedFiles, Json::ArrayIndex ind
 class DelugeTorrentStateIterator : public ITorrentStateIterator
 {
 public:
-    DelugeTorrentStateIterator(fs::path const& stateDir, JsonValuePtr fastResume, JsonValuePtr state,
+    DelugeTorrentStateIterator(fs::path const& stateDir, ojson&& fastResume, ojson&& state,
         IFileStreamProvider const& fileStreamProvider);
 
 public:
@@ -145,23 +142,23 @@ public:
 
 private:
     fs::path const m_stateDir;
-    JsonValuePtr const m_fastResume;
-    JsonValuePtr const m_state;
+    ojson const m_fastResume;
+    ojson const m_state;
     IFileStreamProvider const& m_fileStreamProvider;
-    Json::Value::iterator m_stateIt;
-    Json::Value::iterator const m_stateEnd;
+    ojson::const_array_iterator m_stateIt;
+    ojson::const_array_iterator const m_stateEnd;
     std::mutex m_stateItMutex;
     BencodeCodec const m_bencoder;
 };
 
-DelugeTorrentStateIterator::DelugeTorrentStateIterator(fs::path const& stateDir, JsonValuePtr fastResume, JsonValuePtr state,
+DelugeTorrentStateIterator::DelugeTorrentStateIterator(fs::path const& stateDir, ojson&& fastResume, ojson&& state,
     IFileStreamProvider const& fileStreamProvider) :
     m_stateDir(stateDir),
     m_fastResume(std::move(fastResume)),
     m_state(std::move(state)),
     m_fileStreamProvider(fileStreamProvider),
-    m_stateIt((*m_state)[Detail::StateField::Torrents].begin()),
-    m_stateEnd((*m_state)[Detail::StateField::Torrents].end()),
+    m_stateIt(m_state[Detail::StateField::Torrents].array_range().begin()),
+    m_stateEnd(m_state[Detail::StateField::Torrents].array_range().end()),
     m_stateItMutex(),
     m_bencoder()
 {
@@ -180,15 +177,15 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
         return false;
     }
 
-    Json::Value const& state = *m_stateIt++;
+    ojson const& state = *m_stateIt++;
 
     lock.unlock();
 
-    std::string const infoHash = state[STField::TorrentId].asString();
+    std::string const infoHash = state[STField::TorrentId].as_string();
 
-    Json::Value fastResume;
+    ojson fastResume;
     {
-        std::istringstream stream((*m_fastResume)[infoHash].asString(), std::ios_base::in | std::ios_base::binary);
+        std::istringstream stream(m_fastResume[infoHash].as_string(), std::ios_base::in | std::ios_base::binary);
         m_bencoder.Decode(stream, fastResume);
     }
 
@@ -204,25 +201,25 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
         Throw<Exception>() << "Info hashes don't match: " << box.Torrent.GetInfoHash() << " vs. " << infoHash;
     }
 
-    box.AddedAt = fastResume[FRField::AddedTime].asUInt();
-    box.CompletedAt = fastResume[FRField::CompletedTime].asUInt();
-    box.IsPaused = state[STField::Paused].asBool();
-    box.DownloadedSize = fastResume[FRField::TotalDownloaded].asUInt64();
-    box.UploadedSize = fastResume[FRField::TotalUploaded].asUInt64();
+    box.AddedAt = fastResume[FRField::AddedTime].as_uinteger();
+    box.CompletedAt = fastResume[FRField::CompletedTime].as_uinteger();
+    box.IsPaused = state[STField::Paused].as_bool();
+    box.DownloadedSize = fastResume[FRField::TotalDownloaded].as_uinteger();
+    box.UploadedSize = fastResume[FRField::TotalUploaded].as_uinteger();
     box.CorruptedSize = 0;
-    box.SavePath = Util::GetPath(state[STField::SavePath].asString()) / (fastResume.isMember(FRField::MappedFiles) ?
-        *Util::GetPath(fastResume[FRField::MappedFiles][0].asString()).begin() : box.Torrent.GetName());
+    box.SavePath = Util::GetPath(state[STField::SavePath].as_string()) / (fastResume.has_member(FRField::MappedFiles) ?
+        *Util::GetPath(fastResume[FRField::MappedFiles][0].as_string()).begin() : box.Torrent.GetName());
     box.BlockSize = box.Torrent.GetPieceSize();
     box.RatioLimit = FromStoreRatioLimit(state[STField::StopAtRatio], state[STField::StopRatio]);
     box.DownloadSpeedLimit = FromStoreSpeedLimit(state[STField::MaxDownloadSpeed]);
     box.UploadSpeedLimit = FromStoreSpeedLimit(state[STField::MaxUploadSpeed]);
 
-    Json::Value const& filePriorities = state[STField::FilePriorities];
-    Json::Value const& mappedFiles = fastResume[FRField::MappedFiles];
+    ojson const& filePriorities = state[STField::FilePriorities];
+    ojson const& mappedFiles = fastResume[FRField::MappedFiles];
     box.Files.reserve(filePriorities.size());
-    for (Json::ArrayIndex i = 0; i < filePriorities.size(); ++i)
+    for (std::size_t i = 0; i < filePriorities.size(); ++i)
     {
-        int const filePriority = filePriorities[i].asInt();
+        int const filePriority = filePriorities[i].as_integer();
         fs::path const changedPath = GetChangedFilePath(mappedFiles, i);
         fs::path const originalPath = box.Torrent.GetFilePath(i);
 
@@ -237,7 +234,7 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
     std::uint64_t const totalSize = box.Torrent.GetTotalSize();
     std::uint64_t const totalBlockCount = (totalSize + box.BlockSize - 1) / box.BlockSize;
     box.ValidBlocks.reserve(totalBlockCount);
-    for (bool const isPieceValid : fastResume[FRField::Pieces].asString())
+    for (bool const isPieceValid : fastResume[FRField::Pieces].as_string())
     {
         box.ValidBlocks.push_back(isPieceValid);
     }
@@ -304,18 +301,18 @@ ITorrentStateIteratorPtr DelugeStateStore::Export(fs::path const& dataDir, IFile
 
     Logger(Logger::Debug) << "[Deluge] Loading " << Detail::FastResumeFilename;
 
-    auto fastResume = std::make_unique<Json::Value>();
+    ojson fastResume;
     {
         IReadStreamPtr const stream = fileStreamProvider.GetReadStream(stateDir / Detail::FastResumeFilename);
-        BencodeCodec().Decode(*stream, *fastResume);
+        BencodeCodec().Decode(*stream, fastResume);
     }
 
     Logger(Logger::Debug) << "[Deluge] Loading " << Detail::StateFilename;
 
-    auto state = std::make_unique<Json::Value>();
+    ojson state;
     {
         IReadStreamPtr const stream = fileStreamProvider.GetReadStream(stateDir / Detail::StateFilename);
-        PickleCodec().Decode(*stream, *state);
+        PickleCodec().Decode(*stream, state);
     }
 
     return std::make_unique<DelugeTorrentStateIterator>(stateDir, std::move(fastResume), std::move(state), fileStreamProvider);

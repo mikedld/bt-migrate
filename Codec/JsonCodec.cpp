@@ -16,10 +16,6 @@
 
 #include "JsonCodec.h"
 
-#include <json/reader.h>
-#include <json/value.h>
-#include <json/writer.h>
-
 #include <iostream>
 
 JsonCodec::JsonCodec()
@@ -32,12 +28,12 @@ JsonCodec::~JsonCodec()
     //
 }
 
-void JsonCodec::Decode(std::istream& stream, Json::Value& root) const
+void JsonCodec::Decode(std::istream& stream, ojson& root) const
 {
     stream >> root;
 }
 
-void JsonCodec::Encode(std::ostream& stream, Json::Value const& root) const
+void JsonCodec::Encode(std::ostream& stream, ojson const& root) const
 {
     stream << root;
 }

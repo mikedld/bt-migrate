@@ -16,15 +16,17 @@
 
 #pragma once
 
+#include <jsoncons/json.hpp>
+
 #include <iosfwd>
 
-namespace Json { class Value; }
+using jsoncons::ojson;
 
 class IStructuredDataCodec
 {
 public:
     virtual ~IStructuredDataCodec() {}
 
-    virtual void Decode(std::istream& stream, Json::Value& root) const = 0;
-    virtual void Encode(std::ostream& stream, Json::Value const& root) const = 0;
+    virtual void Decode(std::istream& stream, ojson& root) const = 0;
+    virtual void Encode(std::ostream& stream, ojson const& root) const = 0;
 };

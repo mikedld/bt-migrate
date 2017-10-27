@@ -29,8 +29,7 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
-#include <json/value.h>
-#include <json/writer.h>
+#include <jsoncons/json.hpp>
 
 #include <iostream>
 #include <mutex>
@@ -81,35 +80,33 @@ std::string const ResumeFilename = "resume.dat";
 namespace
 {
 
-typedef std::unique_ptr<Json::Value> JsonValuePtr;
-
-Box::LimitInfo FromStoreRatioLimit(Json::Value const& enabled, Json::Value const& storeLimit)
+Box::LimitInfo FromStoreRatioLimit(ojson const& enabled, ojson const& storeLimit)
 {
     Box::LimitInfo result;
-    result.Mode = enabled.asInt() != 0 ? Box::LimitMode::Enabled : Box::LimitMode::Inherit;
-    result.Value = storeLimit.asDouble() / 1000.;
+    result.Mode = enabled.as_integer() != 0 ? Box::LimitMode::Enabled : Box::LimitMode::Inherit;
+    result.Value = storeLimit.as_double() / 1000.;
     return result;
 }
 
-Box::LimitInfo FromStoreSpeedLimit(Json::Value const& storeLimit)
+Box::LimitInfo FromStoreSpeedLimit(ojson const& storeLimit)
 {
     Box::LimitInfo result;
-    result.Mode = storeLimit.asInt() > 0 ? Box::LimitMode::Enabled : Box::LimitMode::Inherit;
-    result.Value = storeLimit.asInt();
+    result.Mode = storeLimit.as_integer() > 0 ? Box::LimitMode::Enabled : Box::LimitMode::Inherit;
+    result.Value = storeLimit.as_integer();
     return result;
 }
 
-fs::path GetChangedFilePath(Json::Value const& targets, std::size_t index)
+fs::path GetChangedFilePath(ojson const& targets, std::size_t index)
 {
     fs::path result;
 
-    if (!targets.isNull())
+    if (!targets.is_null())
     {
-        for (Json::Value const& target : targets)
+        for (ojson const& target : targets.array_range())
         {
-            if (target[0].asUInt() == index)
+            if (target[0].as_uinteger() == index)
             {
-                result = Util::GetPath(target[1].asString());
+                result = Util::GetPath(target[1].as_string());
                 break;
             }
         }
@@ -121,7 +118,7 @@ fs::path GetChangedFilePath(Json::Value const& targets, std::size_t index)
 class uTorrentTorrentStateIterator : public ITorrentStateIterator
 {
 public:
-    uTorrentTorrentStateIterator(fs::path const& dataDir, JsonValuePtr resume, IFileStreamProvider const& fileStreamProvider);
+    uTorrentTorrentStateIterator(fs::path const& dataDir, ojson&& resume, IFileStreamProvider const& fileStreamProvider);
 
 public:
     // ITorrentStateIterator
@@ -129,21 +126,21 @@ public:
 
 private:
     fs::path const m_dataDir;
-    JsonValuePtr const m_resume;
+    ojson const m_resume;
     IFileStreamProvider const& m_fileStreamProvider;
-    Json::Value::iterator m_torrentIt;
-    Json::Value::iterator const m_torrentEnd;
+    ojson::const_object_iterator m_torrentIt;
+    ojson::const_object_iterator const m_torrentEnd;
     std::mutex m_torrentItMutex;
     BencodeCodec const m_bencoder;
 };
 
-uTorrentTorrentStateIterator::uTorrentTorrentStateIterator(fs::path const& dataDir, JsonValuePtr resume,
+uTorrentTorrentStateIterator::uTorrentTorrentStateIterator(fs::path const& dataDir, ojson&& resume,
     IFileStreamProvider const& fileStreamProvider) :
     m_dataDir(dataDir),
     m_resume(std::move(resume)),
     m_fileStreamProvider(fileStreamProvider),
-    m_torrentIt(m_resume->begin()),
-    m_torrentEnd(m_resume->end()),
+    m_torrentIt(m_resume.object_range().begin()),
+    m_torrentEnd(m_resume.object_range().end()),
     m_torrentItMutex(),
     m_bencoder()
 {
@@ -161,7 +158,7 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
     {
         static std::string const TorrentFileExtension = ".torrent";
 
-        fs::path key = m_torrentIt.key().asString();
+        fs::path key = std::string(m_torrentIt->key());
         if (key.extension() == TorrentFileExtension)
         {
             torrentFilename = std::move(key);
@@ -176,7 +173,8 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
         return false;
     }
 
-    Json::Value const& resume = *m_torrentIt++;
+    ojson const& resume = m_torrentIt->value();
+    ++m_torrentIt;
 
     lock.unlock();
 
@@ -187,21 +185,21 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
         box.Torrent = TorrentInfo::Decode(*stream, m_bencoder);
     }
 
-    box.AddedAt = resume[RField::AddedOn].asInt();
-    box.CompletedAt = resume[RField::CompletedOn].asInt();
-    box.IsPaused = resume[RField::Started].asInt() == Detail::PausedState ||
-        resume[RField::Started].asInt() == Detail::StoppedState;
-    box.DownloadedSize = resume[RField::Downloaded].asUInt64();
-    box.UploadedSize = resume[RField::Uploaded].asUInt64();
-    box.CorruptedSize = resume[RField::Corrupt].asUInt64();
-    box.SavePath = Util::GetPath(resume[RField::Path].asString());
+    box.AddedAt = resume[RField::AddedOn].as_integer();
+    box.CompletedAt = resume[RField::CompletedOn].as_integer();
+    box.IsPaused = resume[RField::Started].as_integer() == Detail::PausedState ||
+        resume[RField::Started].as_integer() == Detail::StoppedState;
+    box.DownloadedSize = resume[RField::Downloaded].as_uinteger();
+    box.UploadedSize = resume[RField::Uploaded].as_uinteger();
+    box.CorruptedSize = resume[RField::Corrupt].as_uinteger();
+    box.SavePath = Util::GetPath(resume[RField::Path].as_string());
     box.BlockSize = box.Torrent.GetPieceSize();
     box.RatioLimit = FromStoreRatioLimit(resume[RField::OverrideSeedSettings], resume[RField::WantedRatio]);
     box.DownloadSpeedLimit = FromStoreSpeedLimit(resume[RField::DownSpeed]);
     box.UploadSpeedLimit = FromStoreSpeedLimit(resume[RField::UpSpeed]);
 
-    std::string const filePriorities = resume[RField::Prio].asString();
-    Json::Value const& targets = resume[RField::Targets];
+    std::string const filePriorities = resume[RField::Prio].as_string();
+    ojson const& targets = resume[RField::Targets];
     box.Files.reserve(filePriorities.size());
     for (std::size_t i = 0; i < filePriorities.size(); ++i)
     {
@@ -219,7 +217,7 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
     std::uint64_t const totalSize = box.Torrent.GetTotalSize();
     std::uint64_t const totalBlockCount = (totalSize + box.BlockSize - 1) / box.BlockSize;
     box.ValidBlocks.reserve(totalBlockCount + 8);
-    for (unsigned char const c : resume[RField::Have].asString())
+    for (unsigned char const c : resume[RField::Have].as_string())
     {
         for (int i = 0; i < 8; ++i)
         {
@@ -265,10 +263,10 @@ ITorrentStateIteratorPtr uTorrentStateStore::Export(fs::path const& dataDir, IFi
 {
     Logger(Logger::Debug) << "[uTorrent] Loading " << Detail::ResumeFilename;
 
-    auto resume = std::make_unique<Json::Value>();
+    ojson resume;
     {
         IReadStreamPtr const stream = fileStreamProvider.GetReadStream(dataDir / Detail::ResumeFilename);
-        BencodeCodec().Decode(*stream, *resume);
+        BencodeCodec().Decode(*stream, resume);
     }
 
     return std::make_unique<uTorrentTorrentStateIterator>(dataDir, std::move(resume), fileStreamProvider);
