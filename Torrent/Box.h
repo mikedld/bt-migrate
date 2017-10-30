@@ -22,6 +22,7 @@
 
 #include <cstdint>
 #include <ctime>
+#include <string>
 #include <vector>
 
 struct Box
@@ -73,4 +74,5 @@ struct Box
     LimitInfo UploadSpeedLimit;
     std::vector<FileInfo> Files;
     std::vector<bool> ValidBlocks;
+    std::vector<std::vector<std::string>> Trackers;
 };

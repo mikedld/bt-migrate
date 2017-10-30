@@ -325,11 +325,16 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
     resume[RField::SpeedLimitUp] = ToStoreSpeedLimit(box.UploadSpeedLimit);
     resume[RField::Uploaded] = box.UploadedSize;
 
-    std::string const baseName = resume[RField::Name].as_string() + '.' + box.Torrent.GetInfoHash().substr(0, 16);
+    Util::SortJsonObjectKeys(resume);
+
+    TorrentInfo torrent = box.Torrent;
+    torrent.SetTrackers(box.Trackers);
+
+    std::string const baseName = resume[RField::Name].as_string() + '.' + torrent.GetInfoHash().substr(0, 16);
 
     {
         IWriteStreamPtr const stream = fileStreamProvider.GetWriteStream(Detail::GetTorrentFilePath(dataDir, baseName));
-        box.Torrent.Encode(*stream, m_bencoder);
+        torrent.Encode(*stream, m_bencoder);
     }
 
     {

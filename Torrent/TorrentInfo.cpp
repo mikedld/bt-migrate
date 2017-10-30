@@ -137,6 +137,29 @@ fs::path TorrentInfo::GetFilePath(std::size_t fileIndex) const
     return result;
 }
 
+void TorrentInfo::SetTrackers(std::vector<std::vector<std::string>> const& trackers)
+{
+    ojson announceList = ojson::array();
+
+    for (auto const& tier : trackers)
+    {
+        announceList.emplace_back(tier);
+    }
+
+    m_torrent["announce-list"] = announceList;
+
+    if (announceList.empty())
+    {
+        m_torrent.erase("announce");
+    }
+    else
+    {
+        m_torrent["announce"] = announceList[0][0];
+    }
+
+    Util::SortJsonObjectKeys(m_torrent);
+}
+
 TorrentInfo TorrentInfo::Decode(std::istream& stream, IStructuredDataCodec const& codec)
 {
     ojson torrent;

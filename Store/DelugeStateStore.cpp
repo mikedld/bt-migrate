@@ -70,6 +70,15 @@ std::string const SavePath = "save_path";
 std::string const StopAtRatio = "stop_at_ratio";
 std::string const StopRatio = "stop_ratio";
 std::string const TorrentId = "torrent_id";
+std::string const Trackers = "trackers";
+
+namespace TrackerField
+{
+
+std::string const Tier = "tier";
+std::string const Url = "url";
+
+} // namespace TrackersField
 
 } // namespace TorrentField
 
@@ -237,6 +246,17 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
     for (bool const isPieceValid : fastResume[FRField::Pieces].as_string())
     {
         box.ValidBlocks.push_back(isPieceValid);
+    }
+
+    for (ojson const& tracker : state[STField::Trackers].array_range())
+    {
+        namespace tf = STField::TrackerField;
+
+        std::size_t const tier = tracker[tf::Tier].as<std::size_t>();
+        std::string const url = tracker[tf::Url].as_string();
+
+        box.Trackers.resize(std::max(box.Trackers.size(), tier + 1));
+        box.Trackers[tier].push_back(url);
     }
 
     nextBox = std::move(box);

@@ -23,6 +23,7 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/uuid/sha1.hpp>
 
+#include <algorithm>
 #include <cctype>
 #include <cerrno>
 #include <cstdlib>
@@ -87,6 +88,14 @@ std::string BinaryToHex(std::string const& data)
     }
 
     return result;
+}
+
+void SortJsonObjectKeys(ojson& object)
+{
+    using kvp_type = ojson::key_value_pair_type;
+
+    std::sort(object.begin_members(), object.end_members(),
+        [](kvp_type const& lhs, kvp_type const& rhs) { return lhs.key().compare(rhs.key()) < 0; });
 }
 
 } // namespace Util

@@ -28,5 +28,6 @@ target_link_libraries(${PROJECT_NAME}
     Boost::filesystem
     Boost::disable_autolinking
     Boost::dynamic_linking
+    jsoncons
     Threads::Threads
 )

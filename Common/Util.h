@@ -16,9 +16,12 @@
 
 #pragma once
 
+#include <jsoncons/json.hpp>
+
 #include <string>
 
 namespace boost { namespace filesystem { class path; } }
+using jsoncons::ojson;
 
 namespace Util
 {
@@ -30,5 +33,7 @@ boost::filesystem::path GetPath(std::string const& nativePath);
 std::string CalculateSha1(std::string const& data);
 
 std::string BinaryToHex(std::string const& data);
+
+void SortJsonObjectKeys(ojson& object);
 
 } // namespace Util

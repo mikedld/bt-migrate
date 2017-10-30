@@ -53,6 +53,7 @@ std::string const Path = "path";
 std::string const Prio = "prio";
 std::string const Started = "started";
 std::string const Targets = "targets";
+std::string const Trackers = "trackers";
 std::string const Uploaded = "uploaded";
 std::string const UpSpeed = "upspeed";
 std::string const WantedRatio = "wanted_ratio";
@@ -227,6 +228,11 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
     }
 
     box.ValidBlocks.resize(totalBlockCount);
+
+    for (ojson const& trackerUrl : resume[RField::Trackers].array_range())
+    {
+        box.Trackers.push_back({trackerUrl.as_string()});
+    }
 
     nextBox = std::move(box);
     return true;

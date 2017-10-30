@@ -44,7 +44,8 @@ Box::Box() :
     DownloadSpeedLimit(),
     UploadSpeedLimit(),
     Files(),
-    ValidBlocks()
+    ValidBlocks(),
+    Trackers()
 {
     //
 }

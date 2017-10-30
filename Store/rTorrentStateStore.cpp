@@ -47,13 +47,21 @@ namespace ResumeField
 
 std::string const Bitfield = "bitfield";
 std::string const Files = "files";
+std::string const Trackers = "trackers";
 
-namespace FilesField
+namespace FileField
 {
 
 std::string const Priority = "priority";
 
-} // namespace FilesField
+} // namespace FileField
+
+namespace TrackerField
+{
+
+std::string const Enabled = "enabled";
+
+} // namespace TrackerField
 
 } // namespace ResumeField
 
@@ -184,7 +192,7 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
     box.Files.reserve(resume[RField::Files].size());
     for (ojson const& file : resume[RField::Files].array_range())
     {
-        namespace ff = Detail::ResumeField::FilesField;
+        namespace ff = RField::FileField;
 
         int const filePriority = file[ff::Priority].as_integer();
 
@@ -208,6 +216,23 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
     }
 
     box.ValidBlocks.resize(totalBlockCount);
+
+    for (auto const& tracker : resume[RField::Trackers].object_range())
+    {
+        namespace tf = RField::TrackerField;
+
+        std::string const url = tracker.key();
+        if (url == "dht://")
+        {
+            continue;
+        }
+
+        ojson const& params = tracker.value();
+        if (params[tf::Enabled].as_integer() == 1)
+        {
+            box.Trackers.push_back({url});
+        }
+    }
 
     nextBox = std::move(box);
     return true;
