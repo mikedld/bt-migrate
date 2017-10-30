@@ -9,7 +9,7 @@ Inspired by [old 'wontfix' Transmission ticket](https://trac.transmissionbt.com/
 Building
 ========
 
-You will need [boost](http://www.boost.org/) and [JsonCpp](http://jsoncpp.sourceforge.net/) libraries installed.
+You will need [boost](http://www.boost.org/) library installed.
 
 Clone, generate environment for your favorite build system (we use CMake as abstraction layer), then compile. For example,
 
