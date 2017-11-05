@@ -330,7 +330,7 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
     TorrentInfo torrent = box.Torrent;
     torrent.SetTrackers(box.Trackers);
 
-    std::string const baseName = resume[RField::Name].as_string() + '.' + torrent.GetInfoHash().substr(0, 16);
+    std::string const baseName = torrent.GetInfoHash();
 
     {
         IWriteStreamPtr const stream = fileStreamProvider.GetWriteStream(Detail::GetTorrentFilePath(dataDir, baseName));
