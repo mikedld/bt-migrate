@@ -330,7 +330,9 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
     TorrentInfo torrent = box.Torrent;
     torrent.SetTrackers(box.Trackers);
 
-    std::string const baseName = torrent.GetInfoHash();
+    // Transmission generates file names that are the torrent name plus the first 16 chars of the hash.
+    // Match this output file name as to not create duplicate .torrent & .resume files when loaded into the client.
+    std::string const baseName = torrent.GetName() + "." + torrent.GetInfoHash().substr(0, 16);
 
     {
         IWriteStreamPtr const stream = fileStreamProvider.GetWriteStream(Detail::GetTorrentFilePath(dataDir, baseName));
