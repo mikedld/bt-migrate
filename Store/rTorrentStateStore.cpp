@@ -130,13 +130,20 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
     std::unique_lock<std::mutex> lock(m_directoryItMutex);
 
     fs::path stateFilePath;
+    fs::path torrentFilePath;
+
     while (m_directoryIt != m_directoryEnd)
     {
         fs::path const& path = m_directoryIt->path();
         if (path.extension() == Detail::StateFileExtension && m_directoryIt->status().type() == fs::regular_file)
         {
             stateFilePath = path;
-            break;
+            torrentFilePath = stateFilePath;
+            torrentFilePath.replace_extension(fs::path());
+            if (fs::exists(torrentFilePath))
+            {
+                break;
+            }
         }
 
         ++m_directoryIt;
@@ -157,9 +164,6 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
     Box box;
 
     {
-        fs::path torrentFilePath = stateFilePath;
-        torrentFilePath.replace_extension(fs::path());
-
         IReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(torrentFilePath);
         box.Torrent = TorrentInfo::Decode(*stream, m_bencoder);
 
