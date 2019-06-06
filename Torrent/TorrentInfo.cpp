@@ -33,7 +33,7 @@ namespace
 
 std::string CalculateInfoHash(ojson const& torrent)
 {
-    if (!torrent.has_member("info"))
+    if (!torrent.contains("info"))
     {
         throw Exception("Torrent file is missing info dictionary");
     }
@@ -75,15 +75,15 @@ std::uint64_t TorrentInfo::GetTotalSize() const
 
     ojson const& info = m_torrent["info"];
 
-    if (!info.has_member("files"))
+    if (!info.contains("files"))
     {
-        result += info["length"].as_uinteger();
+        result += info["length"].as<std::uint64_t>();
     }
     else
     {
         for (ojson const& file : info["files"].array_range())
         {
-            result += file["length"].as_uinteger();
+            result += file["length"].as<std::uint64_t>();
         }
     }
 
@@ -94,14 +94,14 @@ std::uint32_t TorrentInfo::GetPieceSize() const
 {
     ojson const& info = m_torrent["info"];
 
-    return info["piece length"].as_uinteger();
+    return info["piece length"].as<std::uint32_t>();
 }
 
 std::string TorrentInfo::GetName() const
 {
     ojson const& info = m_torrent["info"];
 
-    return info["name"].as_string();
+    return info["name"].as<std::string>();
 }
 
 fs::path TorrentInfo::GetFilePath(std::size_t fileIndex) const
@@ -110,7 +110,7 @@ fs::path TorrentInfo::GetFilePath(std::size_t fileIndex) const
 
     ojson const& info = m_torrent["info"];
 
-    if (!info.has_member("files"))
+    if (!info.contains("files"))
     {
         if (fileIndex != 0)
         {
@@ -130,7 +130,7 @@ fs::path TorrentInfo::GetFilePath(std::size_t fileIndex) const
 
         for (ojson const& pathPart : files[fileIndex]["path"].array_range())
         {
-            result /= pathPart.as_string();
+            result /= pathPart.as<std::string>();
         }
     }
 

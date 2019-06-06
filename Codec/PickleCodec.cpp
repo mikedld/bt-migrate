@@ -338,7 +338,7 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
             {
                 currentItem2 = stack.top();
                 stack.pop();
-                currentItem.Value.set(stack.top().Value.as_string(), currentItem2.Value);
+                currentItem.Value.set(stack.top().Value.as<std::string>(), currentItem2.Value);
                 stack.pop();
             }
             stack.top() = currentItem;
@@ -395,7 +395,7 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
             stack.pop();
             currentItem2 = stack.top();
             stack.pop();
-            stack.top().Value.set(currentItem2.Value.as_string(), currentItem.Value);
+            stack.top().Value.set(currentItem2.Value.as<std::string>(), currentItem.Value);
             break;
 
         // case PERSID:
