@@ -25,6 +25,7 @@ struct TorrentClient
         Deluge,
         rTorrent,
         Transmission,
+        TransmissionMac,
         uTorrent
     };
 

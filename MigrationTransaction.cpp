@@ -94,7 +94,14 @@ IReadStreamPtr MigrationTransaction::GetReadStream(fs::path const& path) const
 
     try
     {
-        result->open(path, std::ios_base::in | std::ios_base::binary);
+        if (m_safePaths.find(path) != m_safePaths.end())
+        {
+            result->open(GetTemporaryPath(path), std::ios_base::in | std::ios_base::binary);
+        }
+        else
+        {
+            result->open(path, std::ios_base::in | std::ios_base::binary);
+        }
     }
     catch (std::exception const&)
     {

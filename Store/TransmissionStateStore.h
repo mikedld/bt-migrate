@@ -20,10 +20,16 @@
 
 #include "Codec/BencodeCodec.h"
 
+enum class TransmissionStateType
+{
+    Generic,
+    Mac
+};
+
 class TransmissionStateStore : public ITorrentStateStore
 {
 public:
-    TransmissionStateStore();
+    explicit TransmissionStateStore(TransmissionStateType stateType);
     virtual ~TransmissionStateStore();
 
 public:
@@ -38,5 +44,6 @@ public:
     virtual void Import(boost::filesystem::path const& dataDir, Box const& box, IFileStreamProvider& fileStreamProvider) const;
 
 private:
+    TransmissionStateType const m_stateType;
     BencodeCodec const m_bencoder;
 };

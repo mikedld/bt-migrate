@@ -41,7 +41,9 @@ ITorrentStateStorePtr TorrentStateStoreFactory::CreateForClient(TorrentClient::E
     case TorrentClient::rTorrent:
         return std::make_unique<rTorrentStateStore>();
     case TorrentClient::Transmission:
-        return std::make_unique<TransmissionStateStore>();
+        return std::make_unique<TransmissionStateStore>(TransmissionStateType::Generic);
+    case TorrentClient::TransmissionMac:
+        return std::make_unique<TransmissionStateStore>(TransmissionStateType::Mac);
     case TorrentClient::uTorrent:
         return std::make_unique<uTorrentStateStore>();
     }

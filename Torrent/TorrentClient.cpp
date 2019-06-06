@@ -26,6 +26,7 @@ namespace ClientName
 std::string const Deluge = "Deluge";
 std::string const rTorrent = "rTorrent";
 std::string const Transmission = "Transmission";
+std::string const TransmissionMac = "TransmissionMac";
 std::string const uTorrent = "uTorrent";
 
 } // namespace
@@ -40,6 +41,8 @@ std::string TorrentClient::ToString(Enum client)
         return ClientName::rTorrent;
     case Transmission:
         return ClientName::Transmission;
+    case TransmissionMac:
+        return ClientName::TransmissionMac;
     case uTorrent:
         return ClientName::uTorrent;
     }
@@ -62,6 +65,10 @@ TorrentClient::Enum TorrentClient::FromString(std::string client)
     else if (iequals(client, ClientName::Transmission))
     {
         return Transmission;
+    }
+    else if (iequals(client, ClientName::TransmissionMac))
+    {
+        return TransmissionMac;
     }
     else if (iequals(client, ClientName::uTorrent))
     {

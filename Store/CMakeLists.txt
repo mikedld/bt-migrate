@@ -33,5 +33,6 @@ target_link_libraries(${PROJECT_NAME}
     Boost::disable_autolinking
     Boost::dynamic_linking
     jsoncons
+    pugixml
     Threads::Threads
 )
