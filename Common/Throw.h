@@ -28,7 +28,7 @@ public:
     }
 
     [[noreturn]]
-    ~Throw() throw(ExceptionT)
+    ~Throw() noexcept(false)
     {
         throw ExceptionT(m_message.str());
     }
