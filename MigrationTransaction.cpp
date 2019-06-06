@@ -101,7 +101,7 @@ IReadStreamPtr MigrationTransaction::GetReadStream(fs::path const& path) const
         Throw<Exception>() << "Unable to open file for reading: " << path;
     }
 
-    return std::move(result);
+    return result;
 }
 
 IWriteStreamPtr MigrationTransaction::GetWriteStream(fs::path const& path)
@@ -139,7 +139,7 @@ IWriteStreamPtr MigrationTransaction::GetWriteStream(fs::path const& path)
         Throw<Exception>() << "Unable to open file for writing: " << path;
     }
 
-    return std::move(result);
+    return result;
 }
 
 fs::path MigrationTransaction::GetTemporaryPath(fs::path const& path) const
