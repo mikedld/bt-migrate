@@ -97,10 +97,8 @@ std::string BinaryToHex(std::string const& data)
 
 void SortJsonObjectKeys(ojson& object)
 {
-    using kvp_type = ojson::key_value_pair_type;
-
     std::sort(object.begin_members(), object.end_members(),
-        [](kvp_type const& lhs, kvp_type const& rhs) { return lhs.key().compare(rhs.key()) < 0; });
+        [](auto const& lhs, auto const& rhs) { return lhs.key().compare(rhs.key()) < 0; });
 }
 
 } // namespace Util

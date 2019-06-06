@@ -221,7 +221,7 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
     {
         namespace tf = RField::TrackerField;
 
-        std::string const url = tracker.key();
+        std::string const url{tracker.key()};
         if (url == "dht://")
         {
             continue;
