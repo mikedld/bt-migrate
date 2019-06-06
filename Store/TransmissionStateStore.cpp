@@ -98,6 +98,7 @@ enum Priority
 
 std::string const CommonDataDirName = "transmission";
 std::string const DaemonDataDirName = "transmission-daemon";
+std::string const MacDataDirName = "Transmission";
 
 std::uint32_t const BlockSize = 16 * 1024;
 
@@ -292,18 +293,36 @@ TorrentClient::Enum TransmissionStateStore::GetTorrentClient() const
 
 fs::path TransmissionStateStore::GuessDataDir(Intention::Enum intention) const
 {
-#ifndef _WIN32
+#if !defined(_WIN32)
 
     fs::path const homeDir = std::getenv("HOME");
 
-    if (IsValidDataDir(homeDir / ".config" / Detail::CommonDataDirName, intention))
+#if defined(__APPLE__)
+
+    fs::path const appSupportDir = homeDir / "Library" / "Application Support";
+
+    fs::path const macDataDir = appSupportDir / Detail::MacDataDirName;
+    if (IsValidDataDir(macDataDir, intention))
     {
-        return homeDir / ".config" / Detail::CommonDataDirName;
+        return macDataDir;
     }
 
-    if (IsValidDataDir(homeDir / ".config" / Detail::DaemonDataDirName, intention))
+#endif
+
+    char const* const xdgConfigHome = std::getenv("XDG_CONFIG_HOME");
+    fs::path const xdgConfigDir = (xdgConfigHome != nullptr && *xdgConfigHome != '\0') ? fs::path(xdgConfigHome) :
+        homeDir / ".config";
+
+    fs::path const commonDataDir = xdgConfigDir / Detail::CommonDataDirName;
+    if (IsValidDataDir(commonDataDir, intention))
     {
-        return homeDir / ".config" / Detail::DaemonDataDirName;
+        return commonDataDir;
+    }
+
+    fs::path const daemonDataDir = xdgConfigDir / Detail::DaemonDataDirName;
+    if (IsValidDataDir(daemonDataDir, intention))
+    {
+        return daemonDataDir;
     }
 
     return fs::path();
