@@ -13,11 +13,13 @@ You will need [boost](http://www.boost.org/) library installed.
 
 Clone, generate environment for your favorite build system (we use CMake as abstraction layer), then compile. For example,
 
-    % git clone https://github.com/mikedld/bt-migrate.git
+    % git clone https://github.com/mikedld/bt-migrate
     % cd bt-migrate
     % git submodule update --init --force
-    % cmake -G 'Unix Makefiles'
-    % make
+    % mkdir _build
+    % cd _build
+    % cmake ..
+    % cmake --build .
 
 Running
 =======
@@ -43,11 +45,11 @@ Some other possible arguments include:
 
 Example use:
 
-    % ./bt-migrate --source deluge --target-dir ~/.config/transmission --dry-run
+    % ./BtMigrate --source deluge --target-dir ~/.config/transmission --dry-run
 
 For a complete set of arguments, execute:
 
-    % ./bt-migrate --help
+    % ./BtMigrate --help
 
 License
 =======
