@@ -401,7 +401,7 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
         try
         {
             IReadStreamPtr const readStream = fileStreamProvider.GetReadStream(transfersPlistPath);
-            plistDoc.load(*readStream);
+            plistDoc.load(*readStream, pugi::parse_default | pugi::parse_declaration | pugi::parse_doctype);
             plistNode = plistDoc.child("plist");
             arrayNode = plistNode.child("array");
         }
