@@ -122,8 +122,8 @@ int main(int argc, char* argv[])
 
         std::string sourceName;
         std::string targetName;
-        fs::path sourceDir;
-        fs::path targetDir;
+        std::string sourceDirString;
+        std::string targetDirString;
         unsigned int maxThreads = std::max(1u, std::thread::hardware_concurrency());
         bool noBackup = false;
         bool dryRun = false;
@@ -132,9 +132,9 @@ int main(int argc, char* argv[])
         po::options_description mainOptions("Main options");
         mainOptions.add_options()
             ("source", po::value<std::string>(&sourceName)->value_name("name"), "source client name")
-            ("source-dir", po::value<fs::path>(&sourceDir)->value_name("path"), "source client data directory")
+            ("source-dir", po::value<std::string>(&sourceDirString)->value_name("path"), "source client data directory")
             ("target", po::value<std::string>(&targetName)->value_name("name"), "target client name")
-            ("target-dir", po::value<fs::path>(&targetDir)->value_name("path"), "target client data directory")
+            ("target-dir", po::value<std::string>(&targetDirString)->value_name("path"), "target client data directory")
             ("max-threads", po::value<unsigned int>(&maxThreads)->value_name("N")->default_value(maxThreads),
                 "maximum number of migration threads")
             ("no-backup", po::bool_switch(&noBackup), "do not backup target client data directory")
@@ -175,7 +175,9 @@ int main(int argc, char* argv[])
 
         TorrentStateStoreFactory const storeFactory;
 
+        fs::path sourceDir = sourceDirString;
         ITorrentStateStorePtr sourceStore = FindStateStore(storeFactory, Intention::Export, sourceName, sourceDir);
+        fs::path targetDir = targetDirString;
         ITorrentStateStorePtr targetStore = FindStateStore(storeFactory, Intention::Import, targetName, targetDir);
 
         unsigned int const threadCount = std::max(1u, maxThreads);
