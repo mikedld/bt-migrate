@@ -431,6 +431,10 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
         }
         catch (Exception const&)
         {
+        }
+
+        if (arrayNode.empty())
+        {
             std::tie(plistDoc, plistNode) = CreateMacPropertyList();
             arrayNode = plistNode.append_child("array");
         }
