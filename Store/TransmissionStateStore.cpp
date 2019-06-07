@@ -401,7 +401,8 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
     TorrentInfo torrent = box.Torrent;
     torrent.SetTrackers(box.Trackers);
 
-    std::string const baseName = torrent.GetInfoHash();
+    std::string const baseName = std::getenv("BT_MIGRATE_TRANSMISSION_2_9X") == nullptr ? torrent.GetInfoHash() :
+        resume[RField::Name].as_string() + '.' + torrent.GetInfoHash().substr(0, 16);
 
     fs::path const torrentFilePath = Detail::GetTorrentFilePath(dataDir, baseName, m_stateType);
     fs::create_directories(torrentFilePath.parent_path());
