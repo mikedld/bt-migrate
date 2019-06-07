@@ -276,7 +276,8 @@ void ToMacStoreTransfer(Box const& box, fs::path const& torrentFilePath, pugi::x
 
 TransmissionStateStore::TransmissionStateStore(TransmissionStateType stateType) :
     m_stateType(stateType),
-    m_bencoder()
+    m_bencoder(),
+    m_tranfersPlistMutex()
 {
     //
 }
@@ -417,6 +418,9 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
         pugi::xml_document plistDoc;
         pugi::xml_node plistNode;
         pugi::xml_node arrayNode;
+
+        // Avoid concurrent access to Transfers.plist, could lead to file corruption
+        std::lock_guard<std::mutex> lock(m_tranfersPlistMutex);
 
         try
         {

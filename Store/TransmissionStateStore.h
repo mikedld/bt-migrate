@@ -20,6 +20,8 @@
 
 #include "Codec/BencodeCodec.h"
 
+#include <mutex>
+
 enum class TransmissionStateType
 {
     Generic,
@@ -46,4 +48,5 @@ public:
 private:
     TransmissionStateType const m_stateType;
     BencodeCodec const m_bencoder;
+    std::mutex mutable m_tranfersPlistMutex;
 };
