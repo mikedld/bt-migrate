@@ -114,7 +114,7 @@ fs::path GetResumeFilePath(fs::path const& dataDir, std::string const& basename,
 
 fs::path GetTorrentsDir(fs::path const& dataDir, TransmissionStateType stateType)
 {
-    return dataDir / (stateType == TransmissionStateType::Mac ? "Torrent" : "torrents");
+    return dataDir / (stateType == TransmissionStateType::Mac ? "Torrents" : "torrents");
 }
 
 fs::path GetTorrentFilePath(fs::path const& dataDir, std::string const& basename, TransmissionStateType stateType)
