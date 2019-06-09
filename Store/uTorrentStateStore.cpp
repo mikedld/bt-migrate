@@ -36,6 +36,8 @@
 
 namespace fs = boost::filesystem;
 
+namespace
+{
 namespace Detail
 {
 
@@ -77,6 +79,7 @@ enum TorrentState
 std::string const ResumeFilename = "resume.dat";
 
 } // namespace Detail
+} // namespace
 
 namespace
 {
@@ -240,15 +243,8 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
 
 } // namespace
 
-uTorrentStateStore::uTorrentStateStore()
-{
-    //
-}
-
-uTorrentStateStore::~uTorrentStateStore()
-{
-    //
-}
+uTorrentStateStore::uTorrentStateStore() = default;
+uTorrentStateStore::~uTorrentStateStore() = default;
 
 TorrentClient::Enum uTorrentStateStore::GetTorrentClient() const
 {

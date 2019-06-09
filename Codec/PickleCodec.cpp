@@ -194,7 +194,7 @@ std::string UnicodeToUtf8(std::string const& text)
         codeBuffer += *(++it);
         codeBuffer += *(++it);
 
-        unsigned int code = std::strtol(codeBuffer.c_str(), NULL, 16);
+        unsigned int code = std::strtol(codeBuffer.c_str(), nullptr, 16);
         if (code >= 0xd800 && code <= 0xdbff)
         {
             if (*(++it) != '\\')
@@ -213,7 +213,7 @@ std::string UnicodeToUtf8(std::string const& text)
             codeBuffer += *(++it);
             codeBuffer += *(++it);
 
-            unsigned int const code2 = std::strtol(codeBuffer.c_str(), NULL, 16);
+            unsigned int const code2 = std::strtol(codeBuffer.c_str(), nullptr, 16);
             if (code2 <= 0xdc00 && code2 >= 0xdfff)
             {
                 throw Exception("Invalid unicode code point");
@@ -242,15 +242,8 @@ void PopMark(std::stack<StackItem>& stack)
 
 } // namespace
 
-PickleCodec::PickleCodec()
-{
-    //
-}
-
-PickleCodec::~PickleCodec()
-{
-    //
-}
+PickleCodec::PickleCodec() = default;
+PickleCodec::~PickleCodec() = default;
 
 void PickleCodec::Decode(std::istream& stream, ojson& root) const
 {
@@ -305,7 +298,7 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
 
         case FLOAT:
             std::getline(stream, buffer, '\n');
-            stack.push(StackItem(code, std::strtod(buffer.c_str(), NULL)));
+            stack.push(StackItem(code, std::strtod(buffer.c_str(), nullptr)));
             break;
 
         case LONG:
@@ -330,7 +323,7 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
         case INST:
             std::getline(stream, buffer, '\n');
             std::getline(stream, buffer, '\n');
-            // fall through
+            [[fallthrough]];
 
         case DICT:
             currentItem = StackItem(code, ojson::object());

@@ -18,15 +18,8 @@
 
 #include <iostream>
 
-JsonCodec::JsonCodec()
-{
-    //
-}
-
-JsonCodec::~JsonCodec()
-{
-    //
-}
+JsonCodec::JsonCodec() = default;
+JsonCodec::~JsonCodec() = default;
 
 void JsonCodec::Decode(std::istream& stream, ojson& root) const
 {

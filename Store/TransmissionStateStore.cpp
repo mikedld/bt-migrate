@@ -41,6 +41,8 @@
 
 namespace fs = boost::filesystem;
 
+namespace
+{
 namespace Detail
 {
 
@@ -128,9 +130,6 @@ fs::path GetMacTransfersFilePath(fs::path const& dataDir)
 }
 
 } // namespace Detail
-
-namespace
-{
 
 ojson ToStoreDoNotDownload(std::vector<Box::FileInfo> const& files)
 {
@@ -282,10 +281,7 @@ TransmissionStateStore::TransmissionStateStore(TransmissionStateType stateType) 
     //
 }
 
-TransmissionStateStore::~TransmissionStateStore()
-{
-    //
-}
+TransmissionStateStore::~TransmissionStateStore() = default;
 
 TorrentClient::Enum TransmissionStateStore::GetTorrentClient() const
 {

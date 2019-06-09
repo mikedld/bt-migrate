@@ -45,12 +45,7 @@ std::string CalculateInfoHash(ojson const& torrent)
 
 } // namespace
 
-TorrentInfo::TorrentInfo() :
-    m_torrent(),
-    m_infoHash()
-{
-    //
-}
+TorrentInfo::TorrentInfo() = default;
 
 TorrentInfo::TorrentInfo(ojson const& torrent) :
     m_torrent(torrent),

@@ -40,7 +40,7 @@ MigrationTransaction::MigrationTransaction(bool writeThrough, bool dryRun) :
     //
 }
 
-MigrationTransaction::~MigrationTransaction()
+MigrationTransaction::~MigrationTransaction() noexcept(false)
 {
     if (m_writeThrough || m_dryRun)
     {

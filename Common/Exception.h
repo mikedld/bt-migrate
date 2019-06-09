@@ -22,12 +22,11 @@
 class Exception : public std::exception
 {
 public:
-    Exception(std::string const& message);
-    virtual ~Exception() throw();
+    explicit Exception(std::string const& message);
 
 public:
     // std::exception
-    virtual char const* what() const throw();
+    virtual char const* what() const noexcept;
 
 private:
     std::string const m_message;
@@ -36,5 +35,5 @@ private:
 class NotImplementedException : public Exception
 {
 public:
-    NotImplementedException(std::string const& place);
+    explicit NotImplementedException(std::string const& place);
 };

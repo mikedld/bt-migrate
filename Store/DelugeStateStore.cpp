@@ -39,6 +39,8 @@
 
 namespace fs = boost::filesystem;
 
+namespace
+{
 namespace Detail
 {
 
@@ -101,6 +103,7 @@ fs::path GetStateDir(fs::path const& dataDir)
 }
 
 } // namespace Detail
+} // namespace
 
 namespace
 {
@@ -265,15 +268,8 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
 
 } // namespace
 
-DelugeStateStore::DelugeStateStore()
-{
-    //
-}
-
-DelugeStateStore::~DelugeStateStore()
-{
-    //
-}
+DelugeStateStore::DelugeStateStore() = default;
+DelugeStateStore::~DelugeStateStore() = default;
 
 TorrentClient::Enum DelugeStateStore::GetTorrentClient() const
 {

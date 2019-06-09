@@ -20,7 +20,7 @@ template<typename... ArgsT>
 class IForwardIterator
 {
 public:
-    virtual ~IForwardIterator() {}
+    virtual ~IForwardIterator() = default;
 
     virtual bool GetNext(ArgsT&... value) = 0;
 };

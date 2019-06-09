@@ -90,10 +90,7 @@ DebugTorrentStateIterator::DebugTorrentStateIterator(ITorrentStateIteratorPtr de
     //
 }
 
-DebugTorrentStateIterator::~DebugTorrentStateIterator()
-{
-    //
-}
+DebugTorrentStateIterator::~DebugTorrentStateIterator() = default;
 
 bool DebugTorrentStateIterator::GetNext(Box& nextBox)
 {

@@ -27,10 +27,7 @@
 
 namespace fs = boost::filesystem;
 
-TorrentStateStoreFactory::TorrentStateStoreFactory()
-{
-    //
-}
+TorrentStateStoreFactory::TorrentStateStoreFactory() = default;
 
 ITorrentStateStorePtr TorrentStateStoreFactory::CreateForClient(TorrentClient::Enum client) const
 {

@@ -28,7 +28,7 @@ class MigrationTransaction : public IFileStreamProvider
 {
 public:
     MigrationTransaction(bool writeThrough, bool dryRun);
-    ~MigrationTransaction();
+    virtual ~MigrationTransaction() noexcept(false);
 
     void Commit();
 

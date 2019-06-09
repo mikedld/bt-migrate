@@ -31,10 +31,7 @@ public:
         //
     }
 
-    virtual ~ThreadSafeIterator()
-    {
-        //
-    }
+    virtual ~ThreadSafeIterator() = default;
 
 public:
     // IForwardIterator

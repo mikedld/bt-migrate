@@ -138,15 +138,8 @@ void EncodeOneValue(std::ostream& stream, ojson const& value)
 
 } // namespace
 
-BencodeCodec::BencodeCodec()
-{
-    //
-}
-
-BencodeCodec::~BencodeCodec()
-{
-    //
-}
+BencodeCodec::BencodeCodec() = default;
+BencodeCodec::~BencodeCodec() = default;
 
 void BencodeCodec::Decode(std::istream& stream, ojson& root) const
 {

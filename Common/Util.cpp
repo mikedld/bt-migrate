@@ -43,7 +43,7 @@ namespace Util
 long long StringToInt(std::string const& text)
 {
     errno = 0;
-    long long const result = std::strtoll(text.c_str(), NULL, 10);
+    long long const result = std::strtoll(text.c_str(), nullptr, 10);
     if (result == 0 && errno != 0)
     {
         Throw<Exception>() << "Unable to convert \"" << text << "\" to integer";

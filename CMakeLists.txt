@@ -11,7 +11,7 @@ add_library(pugixml::pugixml INTERFACE IMPORTED)
 set_property(TARGET pugixml::pugixml PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/ThirdParty/pugixml/src")
 set_property(TARGET pugixml::pugixml PROPERTY INTERFACE_COMPILE_DEFINITIONS PUGIXML_HEADER_ONLY)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -21,6 +21,7 @@ if(WIN32)
     add_definitions(-DUNICODE -D_UNICODE)
 else()
     add_compile_options(-Wall -Wextra)
+    add_compile_options(-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-conversion -Wno-global-constructors -Wno-exit-time-destructors -Wno-return-std-move-in-c++11)
 endif()
 
 include_directories(.)

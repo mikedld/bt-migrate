@@ -23,7 +23,7 @@
 #include <iosfwd>
 #include <string>
 
-namespace boost { namespace filesystem { class path; } }
+namespace boost::filesystem { class path; }
 using jsoncons::ojson;
 
 class IStructuredDataCodec;

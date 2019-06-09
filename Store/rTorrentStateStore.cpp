@@ -39,6 +39,8 @@
 namespace fs = boost::filesystem;
 namespace pt = boost::property_tree;
 
+namespace
+{
 namespace Detail
 {
 
@@ -88,6 +90,7 @@ std::string const StateFileExtension = ".rtorrent";
 std::string const LibTorrentStateFileExtension = ".libtorrent_resume";
 
 } // namespace Detail
+} // namespace
 
 namespace
 {
@@ -240,15 +243,8 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
 
 } // namespace
 
-rTorrentStateStore::rTorrentStateStore()
-{
-    //
-}
-
-rTorrentStateStore::~rTorrentStateStore()
-{
-    //
-}
+rTorrentStateStore::rTorrentStateStore() = default;
+rTorrentStateStore::~rTorrentStateStore() = default;
 
 TorrentClient::Enum rTorrentStateStore::GetTorrentClient() const
 {

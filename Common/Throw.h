@@ -22,10 +22,7 @@ template<typename ExceptionT>
 class Throw
 {
 public:
-    Throw()
-    {
-        //
-    }
+    Throw() = default;
 
     [[noreturn]]
     ~Throw() noexcept(false)
