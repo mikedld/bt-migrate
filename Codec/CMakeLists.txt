@@ -1,24 +1,16 @@
-project(BtMigrateCodec)
-
-set(${PROJECT_NAME}_SOURCES
+add_library(BtMigrateCodec
     BencodeCodec.cpp
-    JsonCodec.cpp
-    PickleCodec.cpp
-)
-
-set(${PROJECT_NAME}_HEADERS
     BencodeCodec.h
     IStructuredDataCodec.h
+    JsonCodec.cpp
     JsonCodec.h
-    PickleCodec.h
-)
+    PickleCodec.cpp
+    PickleCodec.h)
 
-add_library(${PROJECT_NAME}
-    ${${PROJECT_NAME}_SOURCES}
-    ${${PROJECT_NAME}_HEADERS}
-)
+target_link_libraries(BtMigrateCodec
+    PRIVATE
+        BtMigrateCommon)
 
-target_link_libraries(${PROJECT_NAME}
-    BtMigrateCommon
-    jsoncons
-)
+target_link_libraries(BtMigrateCodec
+    PUBLIC
+        jsoncons::jsoncons)
