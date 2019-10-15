@@ -21,7 +21,6 @@ if(WIN32)
     add_definitions(-DUNICODE -D_UNICODE)
 else()
     add_compile_options(-Wall -Wextra)
-    add_compile_options(-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-conversion -Wno-global-constructors -Wno-exit-time-destructors -Wno-return-std-move-in-c++11)
 endif()
 
 include_directories(.)
