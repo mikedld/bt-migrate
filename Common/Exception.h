@@ -23,6 +23,7 @@ class Exception : public std::exception
 {
 public:
     explicit Exception(std::string const& message);
+    ~Exception() override;
 
 public:
     // std::exception
@@ -36,4 +37,5 @@ class NotImplementedException : public Exception
 {
 public:
     explicit NotImplementedException(std::string const& place);
+    ~NotImplementedException() override;
 };

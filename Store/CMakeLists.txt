@@ -3,6 +3,7 @@ add_library(BtMigrateStore
     DebugTorrentStateIterator.h
     DelugeStateStore.cpp
     DelugeStateStore.h
+    ITorrentStateStore.cpp
     ITorrentStateStore.h
     TorrentStateStoreFactory.cpp
     TorrentStateStoreFactory.h

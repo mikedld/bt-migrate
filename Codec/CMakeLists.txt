@@ -1,6 +1,7 @@
 add_library(BtMigrateCodec
     BencodeCodec.cpp
     BencodeCodec.h
+    IStructuredDataCodec.cpp
     IStructuredDataCodec.h
     JsonCodec.cpp
     JsonCodec.h

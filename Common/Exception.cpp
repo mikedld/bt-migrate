@@ -27,8 +27,12 @@ char const* Exception::what() const noexcept
     return m_message.c_str();
 }
 
+Exception::~Exception() = default;
+
 NotImplementedException::NotImplementedException(std::string const& place) :
     Exception("Not implemented: " + place)
 {
     //
 }
+
+NotImplementedException::~NotImplementedException() = default;

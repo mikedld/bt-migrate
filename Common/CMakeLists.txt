@@ -1,6 +1,7 @@
 add_library(BtMigrateCommon
     Exception.cpp
     Exception.h
+    IFileStreamProvider.cpp
     IFileStreamProvider.h
     IForwardIterator.h
     Logger.cpp

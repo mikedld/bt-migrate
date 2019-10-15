@@ -27,7 +27,7 @@ typedef std::unique_ptr<std::ostream> IWriteStreamPtr;
 class IFileStreamProvider
 {
 public:
-    virtual ~IFileStreamProvider() noexcept(false) {}
+    virtual ~IFileStreamProvider() noexcept(false);
 
     virtual IReadStreamPtr GetReadStream(boost::filesystem::path const& path) const = 0;
     virtual IWriteStreamPtr GetWriteStream(boost::filesystem::path const& path) = 0;
