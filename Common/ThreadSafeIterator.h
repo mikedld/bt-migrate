@@ -31,11 +31,11 @@ public:
         //
     }
 
-    virtual ~ThreadSafeIterator() = default;
+    ~ThreadSafeIterator() override = default;
 
 public:
     // IForwardIterator
-    virtual bool GetNext(ArgsT&... value)
+    bool GetNext(ArgsT&... value) override
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         return m_decoratee->GetNext(std::forward<ArgsT&...>(value...));

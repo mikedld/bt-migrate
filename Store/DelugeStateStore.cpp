@@ -150,7 +150,7 @@ public:
 
 public:
     // ITorrentStateIterator
-    virtual bool GetNext(Box& nextBox);
+    bool GetNext(Box& nextBox) override;
 
 private:
     fs::path const m_stateDir;

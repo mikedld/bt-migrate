@@ -28,14 +28,14 @@ class MigrationTransaction : public IFileStreamProvider
 {
 public:
     MigrationTransaction(bool writeThrough, bool dryRun);
-    virtual ~MigrationTransaction() noexcept(false);
+    ~MigrationTransaction() noexcept(false) override;
 
     void Commit();
 
 public:
     // IFileStreamProvider
-    virtual IReadStreamPtr GetReadStream(boost::filesystem::path const& path) const;
-    virtual IWriteStreamPtr GetWriteStream(boost::filesystem::path const& path);
+    IReadStreamPtr GetReadStream(boost::filesystem::path const& path) const override;
+    IWriteStreamPtr GetWriteStream(boost::filesystem::path const& path) override;
 
 private:
     boost::filesystem::path GetTemporaryPath(boost::filesystem::path const& path) const;

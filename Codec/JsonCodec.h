@@ -22,10 +22,10 @@ class JsonCodec : public IStructuredDataCodec
 {
 public:
     JsonCodec();
-    virtual ~JsonCodec();
+    ~JsonCodec() override;
 
 public:
     // IStructuredDataCodec
-    virtual void Decode(std::istream& stream, ojson& root) const;
-    virtual void Encode(std::ostream& stream, ojson const& root) const;
+    void Decode(std::istream& stream, ojson& root) const override;
+    void Encode(std::ostream& stream, ojson const& root) const override;
 };

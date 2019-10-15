@@ -26,7 +26,7 @@ public:
 
 public:
     // std::exception
-    virtual char const* what() const noexcept;
+    char const* what() const noexcept override;
 
 private:
     std::string const m_message;
