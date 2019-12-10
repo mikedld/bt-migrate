@@ -113,10 +113,8 @@ int main(int argc, char* argv[])
 {
     try
     {
-#ifndef _WIN32
         std::locale::global(boost::locale::generator().generate(""));
         fs::path::imbue(std::locale());
-#endif
 
         std::string const programName = fs::path(argv[0]).filename().string();
 
