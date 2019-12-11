@@ -8,10 +8,12 @@ jobs:
         uses: actions/checkout@v1
         with:
           submodules: recursive
+      - name: Install dependencies
+        run: cd /tmp && wget --no-check-certificate https://cmake.org/files/v3.16/cmake-3.16.1-Linux-x86_64.tar.gz -O cmake.tar.gz && tar xf cmake.tar.gz && ln -s cmake-3.16.1-Linux-x86_64 cmake
       - name: Configure
-        run: cmake -E make_directory _build && cmake -E chdir _build cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
+        run: /tmp/cmake/bin/cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
       - name: Build
-        run: cmake --build _build --config RelWithDebInfo
+        run: /tmp/cmake/bin/cmake --build _build --config RelWithDebInfo
   build-windows:
     runs-on: [windows-latest]
     steps:
