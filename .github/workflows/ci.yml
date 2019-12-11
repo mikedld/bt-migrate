@@ -1,0 +1,27 @@
+name: CI
+on: [push]
+jobs:
+  build-linux:
+    runs-on: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v1
+      - name: configure
+        run: cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - name: build
+        run: cmake --build . --config RelWithDebInfo
+  build-windows:
+    runs-on: [windows-latest]
+    steps:
+      - uses: actions/checkout@v1
+      - name: configure
+        run: cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - name: build
+        run: cmake --build . --config RelWithDebInfo
+  build-mac:
+    runs-on: [macOS-latest]
+    steps:
+      - uses: actions/checkout@v1
+      - name: configure
+        run: cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - name: build
+        run: cmake --build . --config RelWithDebInfo
