@@ -10,8 +10,12 @@ jobs:
           submodules: recursive
       - name: Install dependencies
         run: cd /tmp && wget --no-check-certificate https://cmake.org/files/v3.16/cmake-3.16.1-Linux-x86_64.tar.gz -O cmake.tar.gz && tar xf cmake.tar.gz && ln -s cmake-3.16.1-Linux-x86_64 cmake
+      - name: Dump environment
+        run: env
       - name: Configure
         run: /tmp/cmake/bin/cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
+        env:
+          Boost_ROOT: /usr/local/share/boost/1.69.0
       - name: Build
         run: /tmp/cmake/bin/cmake --build _build --config RelWithDebInfo
   build-windows:
