@@ -9,7 +9,7 @@ jobs:
         with:
           submodules: recursive
       - name: Configure
-        run: cmake -E make_directory _build && cmake -E chdir _build cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
+        run: cmake -E make_directory _build && cmake -E chdir _build cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
       - name: Build
         run: cmake --build _build --config RelWithDebInfo
   build-windows:
