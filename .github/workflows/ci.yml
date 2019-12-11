@@ -11,7 +11,7 @@ jobs:
           submodules: recursive
       - name: Install dependencies
         run: |
-          apt-get install -y libboost-all-dev
+          sudo apt-get install -y libboost-all-dev
           cd /tmp && wget --no-check-certificate https://cmake.org/files/v3.16/cmake-3.16.1-Linux-x86_64.tar.gz -O cmake.tar.gz && tar xf cmake.tar.gz && ln -s cmake-3.16.1-Linux-x86_64 cmake
       - name: Configure
         run: /tmp/cmake/bin/cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
