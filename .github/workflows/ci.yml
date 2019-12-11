@@ -7,21 +7,27 @@ jobs:
       - uses: actions/checkout@v1
       - name: configure
         run: cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
+        working-directory: _build
       - name: build
         run: cmake --build . --config RelWithDebInfo
+        working-directory: _build
   build-windows:
     runs-on: [windows-latest]
     steps:
       - uses: actions/checkout@v1
       - name: configure
         run: cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
+        working-directory: _build
       - name: build
         run: cmake --build . --config RelWithDebInfo
+        working-directory: _build
   build-mac:
     runs-on: [macOS-latest]
     steps:
       - uses: actions/checkout@v1
       - name: configure
         run: cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
+        working-directory: _build
       - name: build
         run: cmake --build . --config RelWithDebInfo
+        working-directory: _build
