@@ -4,7 +4,10 @@ jobs:
   build-linux:
     runs-on: [ubuntu-latest]
     steps:
-      - uses: actions/checkout@v1
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Checkout submodules
+        uses: textbook/git-checkout-submodule-action@2.0.0
       - name: Configure
         run: cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
       - name: Build
@@ -12,7 +15,10 @@ jobs:
   build-windows:
     runs-on: [windows-latest]
     steps:
-      - uses: actions/checkout@v1
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Checkout submodules
+        uses: textbook/git-checkout-submodule-action@2.0.0
       - name: Configure
         run: cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
       - name: Build
@@ -20,7 +26,10 @@ jobs:
   build-mac:
     runs-on: [macOS-latest]
     steps:
-      - uses: actions/checkout@v1
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Checkout submodules
+        uses: textbook/git-checkout-submodule-action@2.0.0
       - name: Install Boost
         run: brew install boost
       - name: Configure
