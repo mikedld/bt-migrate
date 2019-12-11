@@ -9,7 +9,7 @@ jobs:
         with:
           submodules: recursive
       - name: Configure
-        run: cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
+        run: cmake -E make_directory _build && cmake -E chdir _build cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
       - name: Build
         run: cmake --build _build --config RelWithDebInfo
   build-windows:
@@ -30,9 +30,11 @@ jobs:
         uses: actions/checkout@v1
         with:
           submodules: recursive
-      - name: Install Boost
-        run: brew install boost
+      - name: Install dependencies
+        run: brew install boost icu4c
       - name: Configure
         run: cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
+        env:
+          LDFLAGS: /usr/local/opt/icu4c/lib/libicuuc.a /usr/local/opt/icu4c/lib/libicui18n.a /usr/local/opt/icu4c/lib/libicudata.a /usr/local/opt/boost/lib/libboost_thread-mt.a -liconv
       - name: Build
         run: cmake --build _build --config RelWithDebInfo
