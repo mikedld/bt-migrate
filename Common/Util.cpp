@@ -17,6 +17,7 @@
 #include "Util.h"
 
 #include "Exception.h"
+#include "Logger.h"
 #include "Throw.h"
 
 #include <boost/algorithm/string/replace.hpp>
@@ -33,12 +34,30 @@
 #include <cerrno>
 #include <cstdlib>
 #include <iomanip>
+#include <locale>
 #include <sstream>
 
 namespace fs = boost::filesystem;
 
 namespace Util
 {
+
+namespace
+{
+
+std::string FixPathSeparators(std::string const& nativePath)
+{
+    if (nativePath.size() >= 3 && std::isalpha(nativePath[0]) && nativePath[1] == ':' &&
+        (nativePath[2] == '/' || nativePath[2] == '\\'))
+    {
+        // Looks like Windows path
+        return boost::algorithm::replace_all_copy(nativePath, "\\", "/");
+    }
+
+    return nativePath;
+}
+
+} // namespace
 
 long long StringToInt(std::string const& text)
 {
@@ -54,14 +73,17 @@ long long StringToInt(std::string const& text)
 
 fs::path GetPath(std::string const& nativePath)
 {
-    if (nativePath.size() >= 3 && std::isalpha(nativePath[0]) && nativePath[1] == ':' &&
-        (nativePath[2] == '/' || nativePath[2] == '\\'))
-    {
-        // Looks like Windows path
-        return boost::algorithm::replace_all_copy(nativePath, "\\", "/");
-    }
+    std::string const fixedPath = FixPathSeparators(nativePath);
 
-    return nativePath;
+    try
+    {
+        return fs::path{fixedPath};
+    }
+    catch (std::exception const&)
+    {
+        Logger(Logger::Warning) << "Path " << std::quoted(fixedPath) << " is invalid";
+        return fs::path{fixedPath, std::use_facet<fs::path::codecvt_type>(std::locale::classic())};
+    }
 }
 
 std::string CalculateSha1(std::string const& data)
