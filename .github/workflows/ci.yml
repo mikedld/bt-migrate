@@ -11,12 +11,11 @@ jobs:
           submodules: recursive
       - name: Install dependencies
         run: |
-          sudo apt-get install -y libboost-all-dev libicu-dev
+          printf 'Package: *\nPin: origin ppa.launchpad.net\nPin-Priority: -10\n' | sudo tee /etc/apt/preferences.d/launchpad.pref >/dev/null
+          sudo apt-get install -y libboost-date-time-dev libboost-filesystem-dev libboost-locale-dev libboost-program-options-dev libboost-system-dev libboost-thread-dev libicu-dev
           cd /tmp && wget --no-check-certificate https://cmake.org/files/v3.16/cmake-3.16.1-Linux-x86_64.tar.gz -O cmake.tar.gz && tar xf cmake.tar.gz && ln -s cmake-3.16.1-Linux-x86_64 cmake
       - name: Configure
-        run: /tmp/cmake/bin/cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
-        env:
-          LDFLAGS: /usr/lib/x86_64-linux-gnu/libicuuc.a /usr/lib/x86_64-linux-gnu/libicui18n.a /usr/lib/x86_64-linux-gnu/libicudata.a
+        run: /tmp/cmake/bin/cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBT_MIGRATE_PREFER_STATIC_LIBS=ON -DBT_MIGRATE_BOOST_USES_ICU=ON
       - name: Build
         run: /tmp/cmake/bin/cmake --build _build --config RelWithDebInfo
   build-windows:
@@ -28,7 +27,7 @@ jobs:
         with:
           submodules: recursive
       - name: Configure
-        run: cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
+        run: cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBT_MIGRATE_PREFER_STATIC_LIBS=ON
       - name: Build
         run: cmake --build _build --config RelWithDebInfo
   build-mac:
@@ -42,8 +41,8 @@ jobs:
       - name: Install dependencies
         run: brew install boost icu4c
       - name: Configure
-        run: cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
+        run: cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBT_MIGRATE_PREFER_STATIC_LIBS=ON -DBT_MIGRATE_BOOST_USES_ICU=ON -DICU_ROOT=/usr/local/opt/icu4c
         env:
-          LDFLAGS: /usr/local/opt/icu4c/lib/libicuuc.a /usr/local/opt/icu4c/lib/libicui18n.a /usr/local/opt/icu4c/lib/libicudata.a /usr/local/opt/boost/lib/libboost_thread-mt.a -liconv
+          LDFLAGS: -liconv
       - name: Build
         run: cmake --build _build --config RelWithDebInfo
