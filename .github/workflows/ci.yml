@@ -5,23 +5,25 @@ jobs:
     runs-on: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v1
-      - name: configure
-        run: cmake -E make_directory _build && cmake -E chdir _build cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
-      - name: build
-        run: cmake -E chdir _build cmake --build . --config RelWithDebInfo
+      - name: Configure
+        run: cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
+      - name: Build
+        run: cmake --build _build --config RelWithDebInfo
   build-windows:
     runs-on: [windows-latest]
     steps:
       - uses: actions/checkout@v1
-      - name: configure
-        run: cmake -E make_directory _build && cmake -E chdir _build cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
-      - name: build
-        run: cmake -E chdir _build cmake --build . --config RelWithDebInfo
+      - name: Configure
+        run: cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
+      - name: Build
+        run: cmake --build _build --config RelWithDebInfo
   build-mac:
     runs-on: [macOS-latest]
     steps:
       - uses: actions/checkout@v1
-      - name: configure
-        run: cmake -E make_directory _build && cmake -E chdir _build cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
-      - name: build
-        run: cmake -E chdir _build cmake --build . --config RelWithDebInfo
+      - name: Install Boost
+        run: brew install boost
+      - name: Configure
+        run: cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBoost_USE_STATIC_LIBS=ON
+      - name: Build
+        run: cmake --build _build --config RelWithDebInfo
