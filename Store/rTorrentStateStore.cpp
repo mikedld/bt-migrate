@@ -105,6 +105,9 @@ public:
     bool GetNext(Box& nextBox) override;
 
 private:
+    bool GetNext(fs::path& stateFilePath, fs::path& torrentFilePath, fs::path& libTorrentStateFilePath);
+
+private:
     fs::path const m_dataDir;
     IFileStreamProvider const& m_fileStreamProvider;
     fs::directory_iterator m_directoryIt;
@@ -130,39 +133,13 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
     namespace RField = Detail::ResumeField;
     namespace SField = Detail::StateField;
 
-    std::unique_lock<std::mutex> lock(m_directoryItMutex);
-
     fs::path stateFilePath;
     fs::path torrentFilePath;
-
-    while (m_directoryIt != m_directoryEnd)
-    {
-        fs::path const& path = m_directoryIt->path();
-        if (path.extension() == Detail::StateFileExtension && m_directoryIt->status().type() == fs::regular_file)
-        {
-            stateFilePath = path;
-            torrentFilePath = stateFilePath;
-            torrentFilePath.replace_extension(fs::path());
-            if (fs::exists(torrentFilePath))
-            {
-                break;
-            }
-        }
-
-        ++m_directoryIt;
-    }
-
-    if (stateFilePath.empty())
+    fs::path libTorrentStateFilePath;
+    if (!GetNext(stateFilePath, torrentFilePath, libTorrentStateFilePath))
     {
         return false;
     }
-
-    ++m_directoryIt;
-
-    lock.unlock();
-
-    fs::path libTorrentStateFilePath = stateFilePath;
-    libTorrentStateFilePath.replace_extension(Detail::LibTorrentStateFileExtension);
 
     Box box;
 
@@ -243,6 +220,40 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
 
     nextBox = std::move(box);
     return true;
+}
+
+bool rTorrentTorrentStateIterator::GetNext(fs::path& stateFilePath, fs::path& torrentFilePath,
+    fs::path& libTorrentStateFilePath)
+{
+    std::lock_guard<std::mutex> lock(m_directoryItMutex);
+
+    for (; m_directoryIt != m_directoryEnd; ++m_directoryIt)
+    {
+        stateFilePath = m_directoryIt->path();
+        if (stateFilePath.extension().string() != Detail::StateFileExtension || !fs::is_regular_file(*m_directoryIt))
+        {
+            continue;
+        }
+
+        torrentFilePath = stateFilePath;
+        torrentFilePath.replace_extension(fs::path());
+        if (!fs::is_regular_file(torrentFilePath))
+        {
+            continue;
+        }
+
+        libTorrentStateFilePath = stateFilePath;
+        libTorrentStateFilePath.replace_extension(Detail::LibTorrentStateFileExtension);
+        if (!fs::is_regular_file(libTorrentStateFilePath))
+        {
+            continue;
+        }
+
+        ++m_directoryIt;
+        return true;
+    }
+
+    return false;
 }
 
 } // namespace
