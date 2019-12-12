@@ -46,6 +46,7 @@ Some other possible arguments include:
 Example use:
 
     % ./BtMigrate --source deluge --target-dir ~/.config/transmission --dry-run
+    % ./BtMigrate --source rtorrent --source-dir ~/.session --target transmission --target-dir ~/.config/transmission-daemon --dry-run
 
 For a complete set of arguments, execute:
 
