@@ -38,10 +38,7 @@ ImportHelper::ImportHelper(ITorrentStateStorePtr sourceStore, boost::filesystem:
     //
 }
 
-ImportHelper::~ImportHelper()
-{
-    //
-}
+ImportHelper::~ImportHelper() = default;
 
 ImportHelper::Result ImportHelper::Import(unsigned int threadCount)
 {

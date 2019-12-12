@@ -39,6 +39,8 @@
 
 namespace fs = boost::filesystem;
 
+namespace
+{
 namespace Detail
 {
 
@@ -101,6 +103,7 @@ fs::path GetStateDir(fs::path const& dataDir)
 }
 
 } // namespace Detail
+} // namespace
 
 namespace
 {
@@ -108,17 +111,17 @@ namespace
 Box::LimitInfo FromStoreRatioLimit(ojson const& enabled, ojson const& storeLimit)
 {
     Box::LimitInfo result;
-    result.Mode = enabled.as_bool() ? Box::LimitMode::Enabled : Box::LimitMode::Inherit;
-    result.Value = storeLimit.as_double();
+    result.Mode = enabled.as<bool>() ? Box::LimitMode::Enabled : Box::LimitMode::Inherit;
+    result.Value = storeLimit.as<double>();
     return result;
 }
 
 Box::LimitInfo FromStoreSpeedLimit(ojson const& storeLimit)
 {
     Box::LimitInfo result;
-    result.Mode = storeLimit.as_integer() > 0 ? Box::LimitMode::Enabled :
-        (storeLimit.as_integer() == 0 ? Box::LimitMode::Disabled : Box::LimitMode::Inherit);
-    result.Value = std::max<decltype(result.Value)>(0, storeLimit.as_integer() * 1000);
+    result.Mode = storeLimit.as<int>() > 0 ? Box::LimitMode::Enabled :
+        (storeLimit.as<int>() == 0 ? Box::LimitMode::Disabled : Box::LimitMode::Inherit);
+    result.Value = std::max<decltype(result.Value)>(0, storeLimit.as<int>() * 1000.);
     return result;
 }
 
@@ -128,7 +131,7 @@ fs::path GetChangedFilePath(ojson const& mappedFiles, std::size_t index)
 
     if (!mappedFiles.is_null())
     {
-        fs::path const path = Util::GetPath(mappedFiles[index].as_string());
+        fs::path const path = Util::GetPath(mappedFiles[index].as<std::string>());
         fs::path::iterator pathIt = path.begin();
         while (++pathIt != path.end())
         {
@@ -147,7 +150,7 @@ public:
 
 public:
     // ITorrentStateIterator
-    virtual bool GetNext(Box& nextBox);
+    bool GetNext(Box& nextBox) override;
 
 private:
     fs::path const m_stateDir;
@@ -190,11 +193,11 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
 
     lock.unlock();
 
-    std::string const infoHash = state[STField::TorrentId].as_string();
+    std::string const infoHash = state[STField::TorrentId].as<std::string>();
 
     ojson fastResume;
     {
-        std::istringstream stream(m_fastResume[infoHash].as_string(), std::ios_base::in | std::ios_base::binary);
+        std::istringstream stream(m_fastResume[infoHash].as<std::string>(), std::ios_base::in | std::ios_base::binary);
         m_bencoder.Decode(stream, fastResume);
     }
 
@@ -210,25 +213,25 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
         Throw<Exception>() << "Info hashes don't match: " << box.Torrent.GetInfoHash() << " vs. " << infoHash;
     }
 
-    box.AddedAt = fastResume[FRField::AddedTime].as_uinteger();
-    box.CompletedAt = fastResume[FRField::CompletedTime].as_uinteger();
-    box.IsPaused = state[STField::Paused].as_bool();
-    box.DownloadedSize = fastResume[FRField::TotalDownloaded].as_uinteger();
-    box.UploadedSize = fastResume[FRField::TotalUploaded].as_uinteger();
+    box.AddedAt = fastResume[FRField::AddedTime].as<std::time_t>();
+    box.CompletedAt = fastResume[FRField::CompletedTime].as<std::time_t>();
+    box.IsPaused = state[STField::Paused].as<bool>();
+    box.DownloadedSize = fastResume[FRField::TotalDownloaded].as<std::uint64_t>();
+    box.UploadedSize = fastResume[FRField::TotalUploaded].as<std::uint64_t>();
     box.CorruptedSize = 0;
-    box.SavePath = Util::GetPath(state[STField::SavePath].as_string()) / (fastResume.has_member(FRField::MappedFiles) ?
-        *Util::GetPath(fastResume[FRField::MappedFiles][0].as_string()).begin() : box.Torrent.GetName());
+    box.SavePath = Util::GetPath(state[STField::SavePath].as<std::string>()) / (fastResume.contains(FRField::MappedFiles) ?
+        *Util::GetPath(fastResume[FRField::MappedFiles][0].as<std::string>()).begin() : box.Torrent.GetName());
     box.BlockSize = box.Torrent.GetPieceSize();
     box.RatioLimit = FromStoreRatioLimit(state[STField::StopAtRatio], state[STField::StopRatio]);
     box.DownloadSpeedLimit = FromStoreSpeedLimit(state[STField::MaxDownloadSpeed]);
     box.UploadSpeedLimit = FromStoreSpeedLimit(state[STField::MaxUploadSpeed]);
 
     ojson const& filePriorities = state[STField::FilePriorities];
-    ojson const& mappedFiles = fastResume[FRField::MappedFiles];
+    ojson const& mappedFiles = fastResume.get_with_default(FRField::MappedFiles, ojson::null());
     box.Files.reserve(filePriorities.size());
     for (std::size_t i = 0; i < filePriorities.size(); ++i)
     {
-        int const filePriority = filePriorities[i].as_integer();
+        int const filePriority = filePriorities[i].as<int>();
         fs::path const changedPath = GetChangedFilePath(mappedFiles, i);
         fs::path const originalPath = box.Torrent.GetFilePath(i);
 
@@ -243,7 +246,7 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
     std::uint64_t const totalSize = box.Torrent.GetTotalSize();
     std::uint64_t const totalBlockCount = (totalSize + box.BlockSize - 1) / box.BlockSize;
     box.ValidBlocks.reserve(totalBlockCount);
-    for (bool const isPieceValid : fastResume[FRField::Pieces].as_string())
+    for (bool const isPieceValid : fastResume[FRField::Pieces].as<std::string>())
     {
         box.ValidBlocks.push_back(isPieceValid);
     }
@@ -253,7 +256,7 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
         namespace tf = STField::TrackerField;
 
         std::size_t const tier = tracker[tf::Tier].as<std::size_t>();
-        std::string const url = tracker[tf::Url].as_string();
+        std::string const url = tracker[tf::Url].as<std::string>();
 
         box.Trackers.resize(std::max(box.Trackers.size(), tier + 1));
         box.Trackers[tier].push_back(url);
@@ -265,15 +268,8 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
 
 } // namespace
 
-DelugeStateStore::DelugeStateStore()
-{
-    //
-}
-
-DelugeStateStore::~DelugeStateStore()
-{
-    //
-}
+DelugeStateStore::DelugeStateStore() = default;
+DelugeStateStore::~DelugeStateStore() = default;
 
 TorrentClient::Enum DelugeStateStore::GetTorrentClient() const
 {

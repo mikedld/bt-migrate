@@ -1,37 +1,29 @@
-project(BtMigrateStore)
-
-set(${PROJECT_NAME}_SOURCES
+add_library(BtMigrateStore
     DebugTorrentStateIterator.cpp
-    TorrentStateStoreFactory.cpp
-    DelugeStateStore.cpp
-    rTorrentStateStore.cpp
-    TransmissionStateStore.cpp
-    uTorrentStateStore.cpp
-)
-
-set(${PROJECT_NAME}_HEADERS
-    ITorrentStateStore.h
     DebugTorrentStateIterator.h
-    TorrentStateStoreFactory.h
+    DelugeStateStore.cpp
     DelugeStateStore.h
-    rTorrentStateStore.h
+    ITorrentStateStore.cpp
+    ITorrentStateStore.h
+    TorrentStateStoreFactory.cpp
+    TorrentStateStoreFactory.h
+    TransmissionStateStore.cpp
     TransmissionStateStore.h
-    uTorrentStateStore.h
-)
+    rTorrentStateStore.cpp
+    rTorrentStateStore.h
+    uTorrentStateStore.cpp
+    uTorrentStateStore.h)
 
-add_library(${PROJECT_NAME}
-    ${${PROJECT_NAME}_SOURCES}
-    ${${PROJECT_NAME}_HEADERS}
-)
+target_link_libraries(BtMigrateStore
+    PUBLIC
+        BtMigrateCodec
+        BtMigrateCommon
+        BtMigrateTorrent)
 
-target_link_libraries(${PROJECT_NAME}
-    BtMigrateCodec
-    BtMigrateCommon
-    BtMigrateTorrent
-    Boost::boost
-    Boost::filesystem
-    Boost::disable_autolinking
-    Boost::dynamic_linking
-    jsoncons
-    Threads::Threads
-)
+target_link_libraries(BtMigrateStore
+    PRIVATE
+        Boost::boost
+        Boost::filesystem
+        jsoncons::jsoncons
+        pugixml::pugixml
+        Threads::Threads)

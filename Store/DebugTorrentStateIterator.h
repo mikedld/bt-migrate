@@ -24,11 +24,11 @@ class DebugTorrentStateIterator : public ITorrentStateIterator
 {
 public:
     DebugTorrentStateIterator(ITorrentStateIteratorPtr decoratee);
-    virtual ~DebugTorrentStateIterator();
+    ~DebugTorrentStateIterator() override;
 
 public:
     // ITorrentStateIterator
-    virtual bool GetNext(Box& nextBox);
+    bool GetNext(Box& nextBox) override;
 
 private:
     ITorrentStateIteratorPtr const m_decoratee;

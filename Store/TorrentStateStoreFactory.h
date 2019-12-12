@@ -21,7 +21,7 @@
 
 #include <memory>
 
-namespace boost { namespace filesystem { class path; } }
+namespace boost::filesystem { class path; }
 
 class ITorrentStateStore;
 typedef std::unique_ptr<ITorrentStateStore> ITorrentStateStorePtr;

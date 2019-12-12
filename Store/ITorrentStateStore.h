@@ -22,7 +22,7 @@
 
 #include <memory>
 
-namespace boost { namespace filesystem { class path; } }
+namespace boost::filesystem { class path; }
 
 template<typename... ArgsT>
 class IForwardIterator;
@@ -36,7 +36,7 @@ class IFileStreamProvider;
 class ITorrentStateStore
 {
 public:
-    virtual ~ITorrentStateStore() {}
+    virtual ~ITorrentStateStore();
 
     virtual TorrentClient::Enum GetTorrentClient() const = 0;
 
@@ -53,4 +53,5 @@ class ImportCancelledException : public Exception
 {
 public:
     using Exception::Exception;
+    ~ImportCancelledException() override;
 };

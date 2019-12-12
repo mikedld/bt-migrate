@@ -39,6 +39,8 @@
 namespace fs = boost::filesystem;
 namespace pt = boost::property_tree;
 
+namespace
+{
 namespace Detail
 {
 
@@ -88,6 +90,7 @@ std::string const StateFileExtension = ".rtorrent";
 std::string const LibTorrentStateFileExtension = ".libtorrent_resume";
 
 } // namespace Detail
+} // namespace
 
 namespace
 {
@@ -99,7 +102,7 @@ public:
 
 public:
     // ITorrentStateIterator
-    virtual bool GetNext(Box& nextBox);
+    bool GetNext(Box& nextBox) override;
 
 private:
     fs::path const m_dataDir;
@@ -186,11 +189,11 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
         m_bencoder.Decode(*stream, resume);
     }
 
-    box.AddedAt = state[SField::TimestampStarted].as_integer();
-    box.CompletedAt = state[SField::TimestampFinished].as_integer();
-    box.IsPaused = state[SField::Priority].as_integer() == 0;
-    box.UploadedSize = state[SField::TotalUploaded].as_uinteger();
-    box.SavePath = Util::GetPath(state[SField::Directory].as_string());
+    box.AddedAt = state[SField::TimestampStarted].as<std::time_t>();
+    box.CompletedAt = state[SField::TimestampFinished].as<std::time_t>();
+    box.IsPaused = state[SField::Priority].as<int>() == 0;
+    box.UploadedSize = state[SField::TotalUploaded].as<std::uint64_t>();
+    box.SavePath = Util::GetPath(state[SField::Directory].as<std::string>());
     box.BlockSize = box.Torrent.GetPieceSize();
 
     box.Files.reserve(resume[RField::Files].size());
@@ -198,7 +201,7 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
     {
         namespace ff = RField::FileField;
 
-        int const filePriority = file[ff::Priority].as_integer();
+        int const filePriority = file[ff::Priority].as<int>();
 
         Box::FileInfo boxFile;
         boxFile.DoNotDownload = filePriority == Detail::DoNotDownloadPriority;
@@ -210,7 +213,7 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
     std::uint64_t const totalSize = box.Torrent.GetTotalSize();
     std::uint64_t const totalBlockCount = (totalSize + box.BlockSize - 1) / box.BlockSize;
     box.ValidBlocks.reserve(totalBlockCount + 8);
-    for (unsigned char const c : resume[RField::Bitfield].as_string())
+    for (unsigned char const c : resume[RField::Bitfield].as<std::string>())
     {
         for (int i = 7; i >= 0; --i)
         {
@@ -225,14 +228,14 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
     {
         namespace tf = RField::TrackerField;
 
-        std::string const url = tracker.key();
+        std::string const url{tracker.key()};
         if (url == "dht://")
         {
             continue;
         }
 
         ojson const& params = tracker.value();
-        if (params[tf::Enabled].as_integer() == 1)
+        if (params[tf::Enabled].as<int>() == 1)
         {
             box.Trackers.push_back({url});
         }
@@ -244,15 +247,8 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
 
 } // namespace
 
-rTorrentStateStore::rTorrentStateStore()
-{
-    //
-}
-
-rTorrentStateStore::~rTorrentStateStore()
-{
-    //
-}
+rTorrentStateStore::rTorrentStateStore() = default;
+rTorrentStateStore::~rTorrentStateStore() = default;
 
 TorrentClient::Enum rTorrentStateStore::GetTorrentClient() const
 {

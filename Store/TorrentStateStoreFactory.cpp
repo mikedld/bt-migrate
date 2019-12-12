@@ -27,10 +27,7 @@
 
 namespace fs = boost::filesystem;
 
-TorrentStateStoreFactory::TorrentStateStoreFactory()
-{
-    //
-}
+TorrentStateStoreFactory::TorrentStateStoreFactory() = default;
 
 ITorrentStateStorePtr TorrentStateStoreFactory::CreateForClient(TorrentClient::Enum client) const
 {
@@ -41,7 +38,9 @@ ITorrentStateStorePtr TorrentStateStoreFactory::CreateForClient(TorrentClient::E
     case TorrentClient::rTorrent:
         return std::make_unique<rTorrentStateStore>();
     case TorrentClient::Transmission:
-        return std::make_unique<TransmissionStateStore>();
+        return std::make_unique<TransmissionStateStore>(TransmissionStateType::Generic);
+    case TorrentClient::TransmissionMac:
+        return std::make_unique<TransmissionStateStore>(TransmissionStateType::Mac);
     case TorrentClient::uTorrent:
         return std::make_unique<uTorrentStateStore>();
     }

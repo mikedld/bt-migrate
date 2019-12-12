@@ -22,16 +22,16 @@ class DelugeStateStore : public ITorrentStateStore
 {
 public:
     DelugeStateStore();
-    virtual ~DelugeStateStore();
+    ~DelugeStateStore() override;
 
 public:
     // ITorrentStateStore
-    virtual TorrentClient::Enum GetTorrentClient() const;
+    TorrentClient::Enum GetTorrentClient() const override;
 
-    virtual boost::filesystem::path GuessDataDir(Intention::Enum intention) const;
-    virtual bool IsValidDataDir(boost::filesystem::path const& dataDir, Intention::Enum intention) const;
+    boost::filesystem::path GuessDataDir(Intention::Enum intention) const override;
+    bool IsValidDataDir(boost::filesystem::path const& dataDir, Intention::Enum intention) const override;
 
-    virtual ITorrentStateIteratorPtr Export(boost::filesystem::path const& dataDir,
-        IFileStreamProvider const& fileStreamProvider) const;
-    virtual void Import(boost::filesystem::path const& dataDir, Box const& box, IFileStreamProvider& fileStreamProvider) const;
+    ITorrentStateIteratorPtr Export(boost::filesystem::path const& dataDir,
+        IFileStreamProvider const& fileStreamProvider) const override;
+    void Import(boost::filesystem::path const& dataDir, Box const& box, IFileStreamProvider& fileStreamProvider) const override;
 };

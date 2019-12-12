@@ -22,18 +22,17 @@ Exception::Exception(std::string const& message) :
     //
 }
 
-Exception::~Exception() throw()
-{
-    //
-}
-
-char const* Exception::what() const throw()
+char const* Exception::what() const noexcept
 {
     return m_message.c_str();
 }
+
+Exception::~Exception() = default;
 
 NotImplementedException::NotImplementedException(std::string const& place) :
     Exception("Not implemented: " + place)
 {
     //
 }
+
+NotImplementedException::~NotImplementedException() = default;

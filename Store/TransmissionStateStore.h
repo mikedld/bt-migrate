@@ -20,23 +20,33 @@
 
 #include "Codec/BencodeCodec.h"
 
+#include <mutex>
+
+enum class TransmissionStateType
+{
+    Generic,
+    Mac
+};
+
 class TransmissionStateStore : public ITorrentStateStore
 {
 public:
-    TransmissionStateStore();
-    virtual ~TransmissionStateStore();
+    explicit TransmissionStateStore(TransmissionStateType stateType);
+    ~TransmissionStateStore() override;
 
 public:
     // ITorrentStateStore
-    virtual TorrentClient::Enum GetTorrentClient() const;
+    TorrentClient::Enum GetTorrentClient() const override;
 
-    virtual boost::filesystem::path GuessDataDir(Intention::Enum intention) const;
-    virtual bool IsValidDataDir(boost::filesystem::path const& dataDir, Intention::Enum intention) const;
+    boost::filesystem::path GuessDataDir(Intention::Enum intention) const override;
+    bool IsValidDataDir(boost::filesystem::path const& dataDir, Intention::Enum intention) const override;
 
-    virtual ITorrentStateIteratorPtr Export(boost::filesystem::path const& dataDir,
-        IFileStreamProvider const& fileStreamProvider) const;
-    virtual void Import(boost::filesystem::path const& dataDir, Box const& box, IFileStreamProvider& fileStreamProvider) const;
+    ITorrentStateIteratorPtr Export(boost::filesystem::path const& dataDir,
+        IFileStreamProvider const& fileStreamProvider) const override;
+    void Import(boost::filesystem::path const& dataDir, Box const& box, IFileStreamProvider& fileStreamProvider) const override;
 
 private:
+    TransmissionStateType const m_stateType;
     BencodeCodec const m_bencoder;
+    std::mutex mutable m_tranfersPlistMutex;
 };

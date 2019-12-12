@@ -17,17 +17,24 @@
 #include "Util.h"
 
 #include "Exception.h"
+#include "Logger.h"
 #include "Throw.h"
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 106600
+#include <boost/uuid/detail/sha1.hpp>
+#else
 #include <boost/uuid/sha1.hpp>
+#endif
 
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
 #include <cstdlib>
 #include <iomanip>
+#include <locale>
 #include <sstream>
 
 namespace fs = boost::filesystem;
@@ -35,10 +42,27 @@ namespace fs = boost::filesystem;
 namespace Util
 {
 
+namespace
+{
+
+std::string FixPathSeparators(std::string const& nativePath)
+{
+    if (nativePath.size() >= 3 && std::isalpha(nativePath[0]) && nativePath[1] == ':' &&
+        (nativePath[2] == '/' || nativePath[2] == '\\'))
+    {
+        // Looks like Windows path
+        return boost::algorithm::replace_all_copy(nativePath, "\\", "/");
+    }
+
+    return nativePath;
+}
+
+} // namespace
+
 long long StringToInt(std::string const& text)
 {
     errno = 0;
-    long long const result = std::strtoll(text.c_str(), NULL, 10);
+    long long const result = std::strtoll(text.c_str(), nullptr, 10);
     if (result == 0 && errno != 0)
     {
         Throw<Exception>() << "Unable to convert \"" << text << "\" to integer";
@@ -49,14 +73,17 @@ long long StringToInt(std::string const& text)
 
 fs::path GetPath(std::string const& nativePath)
 {
-    if (nativePath.size() >= 3 && std::isalpha(nativePath[0]) && nativePath[1] == ':' &&
-        (nativePath[2] == '/' || nativePath[2] == '\\'))
-    {
-        // Looks like Windows path
-        return boost::algorithm::replace_all_copy(nativePath, "\\", "/");
-    }
+    std::string const fixedPath = FixPathSeparators(nativePath);
 
-    return nativePath;
+    try
+    {
+        return fs::path{fixedPath};
+    }
+    catch (std::exception const&)
+    {
+        Logger(Logger::Warning) << "Path " << std::quoted(fixedPath) << " is invalid";
+        return fs::path{fixedPath, std::use_facet<fs::path::codecvt_type>(std::locale::classic())};
+    }
 }
 
 std::string CalculateSha1(std::string const& data)
@@ -92,10 +119,8 @@ std::string BinaryToHex(std::string const& data)
 
 void SortJsonObjectKeys(ojson& object)
 {
-    using kvp_type = ojson::key_value_pair_type;
-
     std::sort(object.begin_members(), object.end_members(),
-        [](kvp_type const& lhs, kvp_type const& rhs) { return lhs.key().compare(rhs.key()) < 0; });
+        [](auto const& lhs, auto const& rhs) { return lhs.key().compare(rhs.key()) < 0; });
 }
 
 } // namespace Util

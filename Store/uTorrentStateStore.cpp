@@ -36,6 +36,8 @@
 
 namespace fs = boost::filesystem;
 
+namespace
+{
 namespace Detail
 {
 
@@ -77,6 +79,7 @@ enum TorrentState
 std::string const ResumeFilename = "resume.dat";
 
 } // namespace Detail
+} // namespace
 
 namespace
 {
@@ -84,16 +87,16 @@ namespace
 Box::LimitInfo FromStoreRatioLimit(ojson const& enabled, ojson const& storeLimit)
 {
     Box::LimitInfo result;
-    result.Mode = enabled.as_integer() != 0 ? Box::LimitMode::Enabled : Box::LimitMode::Inherit;
-    result.Value = storeLimit.as_double() / 1000.;
+    result.Mode = enabled.as<int>() != 0 ? Box::LimitMode::Enabled : Box::LimitMode::Inherit;
+    result.Value = storeLimit.as<double>() / 1000.;
     return result;
 }
 
 Box::LimitInfo FromStoreSpeedLimit(ojson const& storeLimit)
 {
     Box::LimitInfo result;
-    result.Mode = storeLimit.as_integer() > 0 ? Box::LimitMode::Enabled : Box::LimitMode::Inherit;
-    result.Value = storeLimit.as_integer();
+    result.Mode = storeLimit.as<int>() > 0 ? Box::LimitMode::Enabled : Box::LimitMode::Inherit;
+    result.Value = storeLimit.as<int>();
     return result;
 }
 
@@ -105,9 +108,9 @@ fs::path GetChangedFilePath(ojson const& targets, std::size_t index)
     {
         for (ojson const& target : targets.array_range())
         {
-            if (target[0].as_uinteger() == index)
+            if (target[0].as<std::size_t>() == index)
             {
-                result = Util::GetPath(target[1].as_string());
+                result = Util::GetPath(target[1].as<std::string>());
                 break;
             }
         }
@@ -123,7 +126,7 @@ public:
 
 public:
     // ITorrentStateIterator
-    virtual bool GetNext(Box& nextBox);
+    bool GetNext(Box& nextBox) override;
 
 private:
     fs::path const m_dataDir;
@@ -186,21 +189,21 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
         box.Torrent = TorrentInfo::Decode(*stream, m_bencoder);
     }
 
-    box.AddedAt = resume[RField::AddedOn].as_integer();
-    box.CompletedAt = resume[RField::CompletedOn].as_integer();
-    box.IsPaused = resume[RField::Started].as_integer() == Detail::PausedState ||
-        resume[RField::Started].as_integer() == Detail::StoppedState;
-    box.DownloadedSize = resume[RField::Downloaded].as_uinteger();
-    box.UploadedSize = resume[RField::Uploaded].as_uinteger();
-    box.CorruptedSize = resume[RField::Corrupt].as_uinteger();
-    box.SavePath = Util::GetPath(resume[RField::Path].as_string());
+    box.AddedAt = resume[RField::AddedOn].as<std::time_t>();
+    box.CompletedAt = resume[RField::CompletedOn].as<std::time_t>();
+    box.IsPaused = resume[RField::Started].as<int>() == Detail::PausedState ||
+        resume[RField::Started].as<int>() == Detail::StoppedState;
+    box.DownloadedSize = resume[RField::Downloaded].as<std::uint64_t>();
+    box.UploadedSize = resume[RField::Uploaded].as<std::uint64_t>();
+    box.CorruptedSize = resume[RField::Corrupt].as<std::uint64_t>();
+    box.SavePath = Util::GetPath(resume[RField::Path].as<std::string>());
     box.BlockSize = box.Torrent.GetPieceSize();
     box.RatioLimit = FromStoreRatioLimit(resume[RField::OverrideSeedSettings], resume[RField::WantedRatio]);
     box.DownloadSpeedLimit = FromStoreSpeedLimit(resume[RField::DownSpeed]);
     box.UploadSpeedLimit = FromStoreSpeedLimit(resume[RField::UpSpeed]);
 
-    std::string const filePriorities = resume[RField::Prio].as_string();
-    ojson const& targets = resume[RField::Targets];
+    std::string const filePriorities = resume[RField::Prio].as<std::string>();
+    ojson const& targets = resume.get_with_default(RField::Targets, ojson::null());
     box.Files.reserve(filePriorities.size());
     for (std::size_t i = 0; i < filePriorities.size(); ++i)
     {
@@ -218,7 +221,7 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
     std::uint64_t const totalSize = box.Torrent.GetTotalSize();
     std::uint64_t const totalBlockCount = (totalSize + box.BlockSize - 1) / box.BlockSize;
     box.ValidBlocks.reserve(totalBlockCount + 8);
-    for (unsigned char const c : resume[RField::Have].as_string())
+    for (unsigned char const c : resume[RField::Have].as<std::string>())
     {
         for (int i = 0; i < 8; ++i)
         {
@@ -231,7 +234,7 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
 
     for (ojson const& trackerUrl : resume[RField::Trackers].array_range())
     {
-        box.Trackers.push_back({trackerUrl.as_string()});
+        box.Trackers.push_back({trackerUrl.as<std::string>()});
     }
 
     nextBox = std::move(box);
@@ -240,15 +243,8 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
 
 } // namespace
 
-uTorrentStateStore::uTorrentStateStore()
-{
-    //
-}
-
-uTorrentStateStore::~uTorrentStateStore()
-{
-    //
-}
+uTorrentStateStore::uTorrentStateStore() = default;
+uTorrentStateStore::~uTorrentStateStore() = default;
 
 TorrentClient::Enum uTorrentStateStore::GetTorrentClient() const
 {

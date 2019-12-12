@@ -1,33 +1,22 @@
-project(BtMigrateCommon)
-
-set(${PROJECT_NAME}_SOURCES
+add_library(BtMigrateCommon
     Exception.cpp
-    Logger.cpp
-    SignalHandler.cpp
-    Util.cpp
-)
-
-set(${PROJECT_NAME}_HEADERS
     Exception.h
+    IFileStreamProvider.cpp
     IFileStreamProvider.h
     IForwardIterator.h
+    Logger.cpp
     Logger.h
+    SignalHandler.cpp
     SignalHandler.h
     ThreadSafeIterator.h
-    Util.h
-)
+    Util.cpp
+    Util.h)
 
-add_library(${PROJECT_NAME}
-    ${${PROJECT_NAME}_SOURCES}
-    ${${PROJECT_NAME}_HEADERS}
-)
-
-target_link_libraries(${PROJECT_NAME}
-    Boost::boost
-    Boost::date_time
-    Boost::filesystem
-    Boost::disable_autolinking
-    Boost::dynamic_linking
-    jsoncons
-    Threads::Threads
-)
+target_link_libraries(BtMigrateCommon
+    PUBLIC
+        Boost::filesystem
+        jsoncons::jsoncons
+    PRIVATE
+        Boost::boost
+        Boost::date_time
+        Threads::Threads)

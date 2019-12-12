@@ -59,7 +59,7 @@ ojson DecodeOneValue(std::istream& stream)
             stream.unget();
             ojson key = DecodeOneValue(stream);
             ojson value = DecodeOneValue(stream);
-            result.set(key.as_string(), value);
+            result.set(key.as<std::string>(), value);
         }
         break;
 
@@ -112,22 +112,22 @@ void EncodeOneValue(std::ostream& stream, ojson const& value)
         }
         stream << 'e';
     }
-    else if (value.is_string())
+    else if (value.is<std::string>())
     {
-        stream << value.as_string().size();
+        stream << value.as<std::string>().size();
         stream << ':';
-        stream << value.as_string();
+        stream << value.as<std::string>();
     }
-    else if (value.is_integer())
+    else if (value.is<std::intmax_t>())
     {
         stream << 'i';
-        stream << value.as_integer();
+        stream << value.as<std::intmax_t>();
         stream << 'e';
     }
-    else if (value.is_uinteger())
+    else if (value.is<std::uintmax_t>())
     {
         stream << 'i';
-        stream << value.as_uinteger();
+        stream << value.as<std::uintmax_t>();
         stream << 'e';
     }
     else
@@ -138,15 +138,8 @@ void EncodeOneValue(std::ostream& stream, ojson const& value)
 
 } // namespace
 
-BencodeCodec::BencodeCodec()
-{
-    //
-}
-
-BencodeCodec::~BencodeCodec()
-{
-    //
-}
+BencodeCodec::BencodeCodec() = default;
+BencodeCodec::~BencodeCodec() = default;
 
 void BencodeCodec::Decode(std::istream& stream, ojson& root) const
 {

@@ -25,7 +25,7 @@ using jsoncons::ojson;
 class IStructuredDataCodec
 {
 public:
-    virtual ~IStructuredDataCodec() {}
+    virtual ~IStructuredDataCodec();
 
     virtual void Decode(std::istream& stream, ojson& root) const = 0;
     virtual void Encode(std::ostream& stream, ojson const& root) const = 0;

@@ -30,14 +30,19 @@
 
 #include <jsoncons/json.hpp>
 
+#include <pugixml.hpp>
+
 #include <algorithm>
 #include <cstdlib>
 #include <ctime>
 #include <iomanip>
 #include <iostream>
+#include <tuple>
 
 namespace fs = boost::filesystem;
 
+namespace
+{
 namespace Detail
 {
 
@@ -95,33 +100,36 @@ enum Priority
 
 std::string const CommonDataDirName = "transmission";
 std::string const DaemonDataDirName = "transmission-daemon";
+std::string const MacDataDirName = "Transmission";
 
 std::uint32_t const BlockSize = 16 * 1024;
 
-fs::path GetResumeDir(fs::path const& dataDir)
+fs::path GetResumeDir(fs::path const& dataDir, TransmissionStateType stateType)
 {
-    return dataDir / "resume";
+    return dataDir / (stateType == TransmissionStateType::Mac ? "Resume" : "resume");
 }
 
-fs::path GetResumeFilePath(fs::path const& dataDir, std::string const& basename)
+fs::path GetResumeFilePath(fs::path const& dataDir, std::string const& basename, TransmissionStateType stateType)
 {
-    return GetResumeDir(dataDir) / (basename + ".resume");
+    return GetResumeDir(dataDir, stateType) / (basename + ".resume");
 }
 
-fs::path GetTorrentsDir(fs::path const& dataDir)
+fs::path GetTorrentsDir(fs::path const& dataDir, TransmissionStateType stateType)
 {
-    return dataDir / "torrents";
+    return dataDir / (stateType == TransmissionStateType::Mac ? "Torrents" : "torrents");
 }
 
-fs::path GetTorrentFilePath(fs::path const& dataDir, std::string const& basename)
+fs::path GetTorrentFilePath(fs::path const& dataDir, std::string const& basename, TransmissionStateType stateType)
 {
-    return GetTorrentsDir(dataDir) / (basename + ".torrent");
+    return GetTorrentsDir(dataDir, stateType) / (basename + ".torrent");
+}
+
+fs::path GetMacTransfersFilePath(fs::path const& dataDir)
+{
+    return dataDir / "Transfers.plist";
 }
 
 } // namespace Detail
-
-namespace
-{
 
 ojson ToStoreDoNotDownload(std::vector<Box::FileInfo> const& files)
 {
@@ -225,18 +233,55 @@ ojson ToStoreSpeedLimit(Box::LimitInfo const& boxLimit)
     return result;
 }
 
+std::tuple<pugi::xml_document, pugi::xml_node> CreateMacPropertyList()
+{
+    pugi::xml_document doc;
+
+    auto xmlDecl = doc.append_child(pugi::node_declaration);
+    xmlDecl.append_attribute("version") = "1.0";
+    xmlDecl.append_attribute("encoding") = "UTF-8";
+
+    auto docType = doc.append_child(pugi::node_doctype);
+    docType.set_value(R"(plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd")");
+
+    auto plist = doc.append_child("plist");
+    plist.append_attribute("version") = "1.0";
+
+    return {std::move(doc), std::move(plist)};
+}
+
+void ToMacStoreTransfer(Box const& box, fs::path const& torrentFilePath, pugi::xml_node& transfer)
+{
+    transfer.append_child("key").text() = "Active";
+    transfer.append_child(box.IsPaused ? "false" : "true");
+
+    transfer.append_child("key").text() = "GroupValue";
+    transfer.append_child("integer").text() = "-1";
+
+    transfer.append_child("key").text() = "InternalTorrentPath";
+    transfer.append_child("string").text() = torrentFilePath.string().c_str();
+
+    transfer.append_child("key").text() = "RemoveWhenFinishedSeeding";
+    transfer.append_child("false");
+
+    transfer.append_child("key").text() = "TorrentHash";
+    transfer.append_child("string").text() = box.Torrent.GetInfoHash().c_str();
+
+    transfer.append_child("key").text() = "WaitToStart";
+    transfer.append_child("false");
+}
+
 } // namespace
 
-TransmissionStateStore::TransmissionStateStore() :
-    m_bencoder()
+TransmissionStateStore::TransmissionStateStore(TransmissionStateType stateType) :
+    m_stateType(stateType),
+    m_bencoder(),
+    m_tranfersPlistMutex()
 {
     //
 }
 
-TransmissionStateStore::~TransmissionStateStore()
-{
-    //
-}
+TransmissionStateStore::~TransmissionStateStore() = default;
 
 TorrentClient::Enum TransmissionStateStore::GetTorrentClient() const
 {
@@ -245,18 +290,36 @@ TorrentClient::Enum TransmissionStateStore::GetTorrentClient() const
 
 fs::path TransmissionStateStore::GuessDataDir(Intention::Enum intention) const
 {
-#ifndef _WIN32
+#if !defined(_WIN32)
 
     fs::path const homeDir = std::getenv("HOME");
 
-    if (IsValidDataDir(homeDir / ".config" / Detail::CommonDataDirName, intention))
+#if defined(__APPLE__)
+
+    fs::path const appSupportDir = homeDir / "Library" / "Application Support";
+
+    fs::path const macDataDir = appSupportDir / Detail::MacDataDirName;
+    if (IsValidDataDir(macDataDir, intention))
     {
-        return homeDir / ".config" / Detail::CommonDataDirName;
+        return macDataDir;
     }
 
-    if (IsValidDataDir(homeDir / ".config" / Detail::DaemonDataDirName, intention))
+#endif
+
+    char const* const xdgConfigHome = std::getenv("XDG_CONFIG_HOME");
+    fs::path const xdgConfigDir = (xdgConfigHome != nullptr && *xdgConfigHome != '\0') ? fs::path(xdgConfigHome) :
+        homeDir / ".config";
+
+    fs::path const commonDataDir = xdgConfigDir / Detail::CommonDataDirName;
+    if (IsValidDataDir(commonDataDir, intention))
     {
-        return homeDir / ".config" / Detail::DaemonDataDirName;
+        return commonDataDir;
+    }
+
+    fs::path const daemonDataDir = xdgConfigDir / Detail::DaemonDataDirName;
+    if (IsValidDataDir(daemonDataDir, intention))
+    {
+        return daemonDataDir;
     }
 
     return fs::path();
@@ -268,11 +331,16 @@ fs::path TransmissionStateStore::GuessDataDir(Intention::Enum intention) const
 #endif
 }
 
-bool TransmissionStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum /*intention*/) const
+bool TransmissionStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum intention) const
 {
+    if (intention == Intention::Import)
+    {
+        return fs::is_directory(dataDir);
+    }
+
     return
-        fs::is_directory(Detail::GetResumeDir(dataDir)) &&
-        fs::is_directory(Detail::GetTorrentsDir(dataDir));
+        fs::is_directory(Detail::GetResumeDir(dataDir, m_stateType)) &&
+        fs::is_directory(Detail::GetTorrentsDir(dataDir, m_stateType));
 }
 
 ITorrentStateIteratorPtr TransmissionStateStore::Export(fs::path const& /*dataDir*/,
@@ -330,15 +398,57 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
     TorrentInfo torrent = box.Torrent;
     torrent.SetTrackers(box.Trackers);
 
-    std::string const baseName = torrent.GetInfoHash();
+    std::string const baseName = std::getenv("BT_MIGRATE_TRANSMISSION_2_9X") == nullptr ? torrent.GetInfoHash() :
+        resume[RField::Name].as_string() + '.' + torrent.GetInfoHash().substr(0, 16);
+
+    fs::path const torrentFilePath = Detail::GetTorrentFilePath(dataDir, baseName, m_stateType);
+    fs::create_directories(torrentFilePath.parent_path());
+
+    fs::path const resumeFilePath = Detail::GetResumeFilePath(dataDir, baseName, m_stateType);
+    fs::create_directories(resumeFilePath.parent_path());
+
+    if (m_stateType == TransmissionStateType::Mac)
+    {
+        fs::path const transfersPlistPath = Detail::GetMacTransfersFilePath(dataDir);
+
+        pugi::xml_document plistDoc;
+        pugi::xml_node plistNode;
+        pugi::xml_node arrayNode;
+
+        // Avoid concurrent access to Transfers.plist, could lead to file corruption
+        std::lock_guard<std::mutex> lock(m_tranfersPlistMutex);
+
+        try
+        {
+            IReadStreamPtr const readStream = fileStreamProvider.GetReadStream(transfersPlistPath);
+            plistDoc.load(*readStream, pugi::parse_default | pugi::parse_declaration | pugi::parse_doctype);
+            plistNode = plistDoc.child("plist");
+            arrayNode = plistNode.child("array");
+        }
+        catch (Exception const&)
+        {
+        }
+
+        if (arrayNode.empty())
+        {
+            std::tie(plistDoc, plistNode) = CreateMacPropertyList();
+            arrayNode = plistNode.append_child("array");
+        }
+
+        pugi::xml_node dictNode = arrayNode.append_child("dict");
+        ToMacStoreTransfer(box, torrentFilePath, dictNode);
+
+        IWriteStreamPtr const writeStream = fileStreamProvider.GetWriteStream(transfersPlistPath);
+        plistDoc.save(*writeStream);
+    }
 
     {
-        IWriteStreamPtr const stream = fileStreamProvider.GetWriteStream(Detail::GetTorrentFilePath(dataDir, baseName));
+        IWriteStreamPtr const stream = fileStreamProvider.GetWriteStream(torrentFilePath);
         torrent.Encode(*stream, m_bencoder);
     }
 
     {
-        IWriteStreamPtr const stream = fileStreamProvider.GetWriteStream(Detail::GetResumeFilePath(dataDir, baseName));
+        IWriteStreamPtr const stream = fileStreamProvider.GetWriteStream(resumeFilePath);
         m_bencoder.Encode(*stream, resume);
     }
 }

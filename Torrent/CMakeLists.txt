@@ -1,34 +1,22 @@
-project(BtMigrateTorrent)
-
-set(${PROJECT_NAME}_SOURCES
+add_library(BtMigrateTorrent
     Box.cpp
-    BoxHelper.cpp
-    TorrentClient.cpp
-    TorrentInfo.cpp
-)
-
-set(${PROJECT_NAME}_HEADERS
     Box.h
+    BoxHelper.cpp
     BoxHelper.h
     Intention.h
+    TorrentClient.cpp
     TorrentClient.h
-    TorrentInfo.h
-)
+    TorrentInfo.cpp
+    TorrentInfo.h)
 
-add_library(${PROJECT_NAME}
-    ${${PROJECT_NAME}_SOURCES}
-    ${${PROJECT_NAME}_HEADERS}
-)
+target_link_libraries(BtMigrateTorrent
+    PRIVATE
+        BtMigrateCodec
+        BtMigrateCommon)
 
-target_link_libraries(${PROJECT_NAME}
-    Boost::boost
-    Boost::filesystem
-    Boost::disable_autolinking
-    Boost::dynamic_linking
-)
-
-target_link_libraries(${PROJECT_NAME}
-    BtMigrateCodec
-    BtMigrateCommon
-    jsoncons
-)
+target_link_libraries(BtMigrateTorrent
+    PUBLIC
+        Boost::filesystem
+        jsoncons::jsoncons
+    PRIVATE
+        Boost::boost)

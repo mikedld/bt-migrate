@@ -13,11 +13,13 @@ You will need [boost](http://www.boost.org/) library installed.
 
 Clone, generate environment for your favorite build system (we use CMake as abstraction layer), then compile. For example,
 
-    % git clone https://github.com/mikedld/bt-migrate.git
+    % git clone https://github.com/mikedld/bt-migrate
     % cd bt-migrate
     % git submodule update --init --force
-    % cmake -G 'Unix Makefiles'
-    % make
+    % mkdir _build
+    % cd _build
+    % cmake ..
+    % cmake --build .
 
 Running
 =======
@@ -32,6 +34,7 @@ Currently supported clients include (names are case-insensitive):
   * "Deluge" (only export)
   * "rTorrent" (only export)
   * "Transmission" (only import)
+  * "TransmissionMac" (only import)
   * "uTorrent" (only export)
 
 Whether only `--source`, only `--source-dir`, or both (same goes for target arguments) are required depends on program ability to guess needed information. If client name allows (by checking various places) to find data directory, then the latter is optional. If path to data directory allows (by analyzing its content) to guess corresponding client name, then the latter is optional. Sometimes it's not possible to guess anything, or name/path guessed don't suit you, so both arguments are required.

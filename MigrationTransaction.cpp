@@ -40,7 +40,7 @@ MigrationTransaction::MigrationTransaction(bool writeThrough, bool dryRun) :
     //
 }
 
-MigrationTransaction::~MigrationTransaction()
+MigrationTransaction::~MigrationTransaction() noexcept(false)
 {
     if (m_writeThrough || m_dryRun)
     {
@@ -94,14 +94,21 @@ IReadStreamPtr MigrationTransaction::GetReadStream(fs::path const& path) const
 
     try
     {
-        result->open(path, std::ios_base::in | std::ios_base::binary);
+        if (m_safePaths.find(path) != m_safePaths.end())
+        {
+            result->open(GetTemporaryPath(path), std::ios_base::in | std::ios_base::binary);
+        }
+        else
+        {
+            result->open(path, std::ios_base::in | std::ios_base::binary);
+        }
     }
     catch (std::exception const&)
     {
         Throw<Exception>() << "Unable to open file for reading: " << path;
     }
 
-    return std::move(result);
+    return result;
 }
 
 IWriteStreamPtr MigrationTransaction::GetWriteStream(fs::path const& path)
@@ -139,7 +146,7 @@ IWriteStreamPtr MigrationTransaction::GetWriteStream(fs::path const& path)
         Throw<Exception>() << "Unable to open file for writing: " << path;
     }
 
-    return std::move(result);
+    return result;
 }
 
 fs::path MigrationTransaction::GetTemporaryPath(fs::path const& path) const
