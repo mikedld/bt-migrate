@@ -18,6 +18,10 @@ jobs:
         run: /tmp/cmake/bin/cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBT_MIGRATE_PREFER_STATIC_LIBS=ON -DBT_MIGRATE_BOOST_USES_ICU=ON
       - name: Build
         run: /tmp/cmake/bin/cmake --build _build --config RelWithDebInfo
+      - uses: actions/upload-artifact@v1
+        with:
+          name: LinuxBinaries
+          path: _build/BtMigrate
   build-windows:
     name: Windows
     runs-on: [windows-latest]
@@ -36,6 +40,15 @@ jobs:
         run: cmake -S . -B _build -A x64 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBT_MIGRATE_PREFER_STATIC_LIBS=ON -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
       - name: Build
         run: cmake --build _build --config RelWithDebInfo
+      - name: Prepare artifacts
+        run: |
+          mkdir _bin
+          copy _build\RelWithDebInfo\BtMigrate.exe _bin
+          copy _build\RelWithDebInfo\BtMigrate.pdb _bin
+      - uses: actions/upload-artifact@v1
+        with:
+          name: WindowsBinaries
+          path: _bin
   build-mac:
     name: Mac
     runs-on: [macOS-latest]
@@ -52,3 +65,7 @@ jobs:
           LDFLAGS: -liconv
       - name: Build
         run: cmake --build _build --config RelWithDebInfo
+      - uses: actions/upload-artifact@v1
+        with:
+          name: MacBinaries
+          path: _build/BtMigrate
