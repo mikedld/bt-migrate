@@ -62,11 +62,21 @@ StreamT& operator << (StreamT& stream, Box::FileInfo const& value)
 template<typename StreamT, typename T>
 StreamT& operator << (StreamT& stream, std::vector<T> const& value)
 {
+    stream << '[';
+
+    bool first = true;
     for (T const& x : value)
     {
+        if (!first)
+        {
+            stream << ", ";
+        }
+
         stream << x;
+        first = false;
     }
 
+    stream << ']';
     return stream;
 }
 
@@ -113,7 +123,8 @@ bool DebugTorrentStateIterator::GetNext(Box& nextBox)
         "DownloadSpeedLimit=" << nextBox.DownloadSpeedLimit << " "
         "UploadSpeedLimit=" << nextBox.UploadSpeedLimit << " "
         "Files<" << nextBox.Files.size() << ">=" << nextBox.Files << " "
-        "ValidBlocks<" << nextBox.ValidBlocks.size() << ">=" << nextBox.ValidBlocks;
+        "ValidBlocks<" << nextBox.ValidBlocks.size() << ">=" << nextBox.ValidBlocks << " "
+        "Trackers<" << nextBox.Trackers.size() << ">=" << nextBox.Trackers;
 
     return true;
 }
