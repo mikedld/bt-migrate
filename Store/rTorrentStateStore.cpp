@@ -20,6 +20,7 @@
 #include "Common/Exception.h"
 #include "Common/IFileStreamProvider.h"
 #include "Common/IForwardIterator.h"
+#include "Common/Logger.h"
 #include "Common/Throw.h"
 #include "Common/Util.h"
 #include "Torrent/Box.h"
@@ -34,6 +35,7 @@
 
 #include <jsoncons/json.hpp>
 
+#include <locale>
 #include <mutex>
 
 namespace fs = boost::filesystem;
@@ -147,10 +149,10 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
         IReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(torrentFilePath);
         box.Torrent = TorrentInfo::Decode(*stream, m_bencoder);
 
-        std::string const infoHashFromFilename = torrentFilePath.stem().string();
-        if (!boost::algorithm::iequals(box.Torrent.GetInfoHash(), infoHashFromFilename))
+        std::string const infoHash = torrentFilePath.stem().string();
+        if (!boost::algorithm::iequals(box.Torrent.GetInfoHash(), infoHash, std::locale::classic()))
         {
-            Throw<Exception>() << "Info hashes don't match: " << box.Torrent.GetInfoHash() << " vs. " << infoHashFromFilename;
+            Throw<Exception>() << "Info hashes don't match: " << box.Torrent.GetInfoHash() << " vs. " << infoHash;
         }
     }
 
@@ -230,8 +232,14 @@ bool rTorrentTorrentStateIterator::GetNext(fs::path& stateFilePath, fs::path& to
     for (; m_directoryIt != m_directoryEnd; ++m_directoryIt)
     {
         stateFilePath = m_directoryIt->path();
-        if (stateFilePath.extension().string() != Detail::StateFileExtension || !fs::is_regular_file(*m_directoryIt))
+        if (stateFilePath.extension().string() != Detail::StateFileExtension)
         {
+            continue;
+        }
+
+        if (!fs::is_regular_file(*m_directoryIt))
+        {
+            Logger(Logger::Warning) << "File " << stateFilePath << " is not a regular file, skipping";
             continue;
         }
 
@@ -239,6 +247,7 @@ bool rTorrentTorrentStateIterator::GetNext(fs::path& stateFilePath, fs::path& to
         torrentFilePath.replace_extension(fs::path());
         if (!fs::is_regular_file(torrentFilePath))
         {
+            Logger(Logger::Warning) << "File " << torrentFilePath << " is not a regular file, skipping";
             continue;
         }
 
@@ -246,6 +255,7 @@ bool rTorrentTorrentStateIterator::GetNext(fs::path& stateFilePath, fs::path& to
         libTorrentStateFilePath.replace_extension(Detail::LibTorrentStateFileExtension);
         if (!fs::is_regular_file(libTorrentStateFilePath))
         {
+            Logger(Logger::Warning) << "File " << libTorrentStateFilePath << " is not a regular file, skipping";
             continue;
         }
 

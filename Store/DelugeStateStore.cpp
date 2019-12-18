@@ -27,6 +27,7 @@
 #include "Torrent/Box.h"
 #include "Torrent/BoxHelper.h"
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
@@ -34,6 +35,7 @@
 
 #include <cstdlib>
 #include <limits>
+#include <locale>
 #include <mutex>
 #include <sstream>
 
@@ -96,6 +98,7 @@ enum Priority
 std::string const DataDirName = "deluge";
 std::string const FastResumeFilename = "torrents.fastresume";
 std::string const StateFilename = "torrents.state";
+std::string const TorrentFileExtension = ".torrent";
 
 fs::path GetStateDir(fs::path const& dataDir)
 {
@@ -153,6 +156,9 @@ public:
     bool GetNext(Box& nextBox) override;
 
 private:
+    bool GetNext(fs::path& torrentFilePath, ojson& state, std::string& fastResumeData);
+
+private:
     fs::path const m_stateDir;
     ojson const m_fastResume;
     ojson const m_state;
@@ -169,8 +175,8 @@ DelugeTorrentStateIterator::DelugeTorrentStateIterator(fs::path const& stateDir,
     m_fastResume(std::move(fastResume)),
     m_state(std::move(state)),
     m_fileStreamProvider(fileStreamProvider),
-    m_stateIt(m_state[Detail::StateField::Torrents].array_range().begin()),
-    m_stateEnd(m_state[Detail::StateField::Torrents].array_range().end()),
+    m_stateIt(m_state[Detail::StateField::Torrents].begin_elements()),
+    m_stateEnd(m_state[Detail::StateField::Torrents].end_elements()),
     m_stateItMutex(),
     m_bencoder()
 {
@@ -182,35 +188,31 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
     namespace FRField = Detail::FastResumeField;
     namespace STField = Detail::StateField::TorrentField;
 
-    std::unique_lock<std::mutex> lock(m_stateItMutex);
-
-    if (m_stateIt == m_stateEnd)
+    fs::path torrentFilePath;
+    ojson state;
+    std::string fastResumeData;
+    if (!GetNext(torrentFilePath, state, fastResumeData))
     {
         return false;
     }
 
-    ojson const& state = *m_stateIt++;
-
-    lock.unlock();
-
-    std::string const infoHash = state[STField::TorrentId].as<std::string>();
-
     ojson fastResume;
     {
-        std::istringstream stream(m_fastResume[infoHash].as<std::string>(), std::ios_base::in | std::ios_base::binary);
+        std::istringstream stream(fastResumeData, std::ios_base::in | std::ios_base::binary);
         m_bencoder.Decode(stream, fastResume);
     }
 
     Box box;
 
     {
-        IReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(m_stateDir / (infoHash + ".torrent"));
+        IReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(torrentFilePath);
         box.Torrent = TorrentInfo::Decode(*stream, m_bencoder);
-    }
 
-    if (box.Torrent.GetInfoHash() != infoHash)
-    {
-        Throw<Exception>() << "Info hashes don't match: " << box.Torrent.GetInfoHash() << " vs. " << infoHash;
+        std::string const infoHash = state[STField::TorrentId].as<std::string>();
+        if (!boost::algorithm::iequals(box.Torrent.GetInfoHash(), infoHash, std::locale::classic()))
+        {
+            Throw<Exception>() << "Info hashes don't match: " << box.Torrent.GetInfoHash() << " vs. " << infoHash;
+        }
     }
 
     box.AddedAt = fastResume[FRField::AddedTime].as<std::time_t>();
@@ -264,6 +266,49 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
 
     nextBox = std::move(box);
     return true;
+}
+
+bool DelugeTorrentStateIterator::GetNext(fs::path& torrentFilePath, ojson& state, std::string& fastResumeData)
+{
+    namespace STField = Detail::StateField::TorrentField;
+
+    std::lock_guard<std::mutex> lock(m_stateItMutex);
+
+    for (; m_stateIt != m_stateEnd; ++m_stateIt)
+    {
+        state = *m_stateIt;
+
+        auto const torrentIdIt = state.find(STField::TorrentId);
+        if (torrentIdIt == state.end_members())
+        {
+            Logger(Logger::Warning) << "Torrent ID is missing from state entry #" <<
+                std::distance(m_state[Detail::StateField::Torrents].begin_elements(), m_stateIt) << ", skipping";
+            continue;
+        }
+
+        std::string const infoHash = state[STField::TorrentId].as<std::string>();
+
+        torrentFilePath = m_stateDir / (infoHash + Detail::TorrentFileExtension);
+        if (!fs::is_regular_file(torrentFilePath))
+        {
+            Logger(Logger::Warning) << "File " << torrentFilePath << " is not a regular file, skipping";
+            continue;
+        }
+
+        auto const resumeIt = m_fastResume.find(infoHash);
+        if (resumeIt == m_fastResume.end_members())
+        {
+            Logger(Logger::Warning) << "Resume info for infohash " << infoHash << " is missing, skipping";
+            continue;
+        }
+
+        fastResumeData = resumeIt->value().as<std::string>();
+
+        ++m_stateIt;
+        return true;
+    }
+
+    return false;
 }
 
 } // namespace

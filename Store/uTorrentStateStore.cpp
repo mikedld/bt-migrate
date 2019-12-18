@@ -77,6 +77,7 @@ enum TorrentState
 };
 
 std::string const ResumeFilename = "resume.dat";
+std::string const TorrentFileExtension = ".torrent";
 
 } // namespace Detail
 } // namespace
@@ -129,6 +130,9 @@ public:
     bool GetNext(Box& nextBox) override;
 
 private:
+    bool GetNext(fs::path& torrentFilePath, ojson& resume);
+
+private:
     fs::path const m_dataDir;
     ojson const m_resume;
     IFileStreamProvider const& m_fileStreamProvider;
@@ -155,37 +159,17 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
 {
     namespace RField = Detail::ResumeField;
 
-    std::unique_lock<std::mutex> lock(m_torrentItMutex);
-
-    fs::path torrentFilename;
-    while (m_torrentIt != m_torrentEnd)
-    {
-        static std::string const TorrentFileExtension = ".torrent";
-
-        fs::path key = std::string(m_torrentIt->key());
-        if (key.extension() == TorrentFileExtension)
-        {
-            torrentFilename = std::move(key);
-            break;
-        }
-
-        ++m_torrentIt;
-    }
-
-    if (torrentFilename.empty())
+    fs::path torrentFilePath;
+    ojson resume;
+    if (!GetNext(torrentFilePath, resume))
     {
         return false;
     }
 
-    ojson const& resume = m_torrentIt->value();
-    ++m_torrentIt;
-
-    lock.unlock();
-
     Box box;
 
     {
-        IReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(m_dataDir / torrentFilename);
+        IReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(torrentFilePath);
         box.Torrent = TorrentInfo::Decode(*stream, m_bencoder);
     }
 
@@ -239,6 +223,33 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
 
     nextBox = std::move(box);
     return true;
+}
+
+bool uTorrentTorrentStateIterator::GetNext(fs::path& torrentFilePath, ojson& resume)
+{
+    std::lock_guard<std::mutex> lock(m_torrentItMutex);
+
+    for (; m_torrentIt != m_torrentEnd; ++m_torrentIt)
+     {
+        torrentFilePath = m_dataDir / std::string(m_torrentIt->key());
+        if (torrentFilePath.extension().string() != Detail::TorrentFileExtension)
+        {
+            continue;
+        }
+
+        if (!fs::is_regular_file(torrentFilePath))
+        {
+            Logger(Logger::Warning) << "File " << torrentFilePath << " is not a regular file, skipping";
+            continue;
+        }
+
+        resume = m_torrentIt->value();
+
+        ++m_torrentIt;
+        return true;
+    }
+
+    return false;
 }
 
 } // namespace
