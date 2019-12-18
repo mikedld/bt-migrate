@@ -325,27 +325,25 @@ fs::path DelugeStateStore::GuessDataDir(Intention::Enum intention) const
 {
 #ifndef _WIN32
 
-    fs::path const homeDir = std::getenv("HOME");
+    fs::path const homeDir = Util::GetEnvironmentVariable("HOME", {});
 
-    if (IsValidDataDir(homeDir / ".config" / Detail::DataDirName, intention))
+    if (!homeDir.empty() && IsValidDataDir(homeDir / ".config" / Detail::DataDirName, intention))
     {
         return homeDir / ".config" / Detail::DataDirName;
     }
 
-    return fs::path();
-
 #else
 
-    fs::path const appDataDir = std::getenv("APPDATA");
+    fs::path const appDataDir = Util::GetEnvironmentVariable("APPDATA", {});
 
-    if (IsValidDataDir(appDataDir / Detail::DataDirName, intention))
+    if (!appDataDir.empty() && IsValidDataDir(appDataDir / Detail::DataDirName, intention))
     {
         return appDataDir / Detail::DataDirName;
     }
 
-    return fs::path();
-
 #endif
+
+    return {};
 }
 
 bool DelugeStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum /*intention*/) const

@@ -36,4 +36,6 @@ std::string BinaryToHex(std::string const& data);
 
 void SortJsonObjectKeys(ojson& object);
 
+std::string GetEnvironmentVariable(std::string const& name, std::string const& defaultValue);
+
 } // namespace Util

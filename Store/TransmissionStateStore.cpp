@@ -292,23 +292,26 @@ fs::path TransmissionStateStore::GuessDataDir(Intention::Enum intention) const
 {
 #if !defined(_WIN32)
 
-    fs::path const homeDir = std::getenv("HOME");
+    fs::path const homeDir = Util::GetEnvironmentVariable("HOME", {});
+    if (homeDir.empty())
+    {
+        return {};
+    }
 
 #if defined(__APPLE__)
 
     fs::path const appSupportDir = homeDir / "Library" / "Application Support";
 
     fs::path const macDataDir = appSupportDir / Detail::MacDataDirName;
-    if (IsValidDataDir(macDataDir, intention))
+    if (!homeDir.empty() && IsValidDataDir(macDataDir, intention))
     {
         return macDataDir;
     }
 
 #endif
 
-    char const* const xdgConfigHome = std::getenv("XDG_CONFIG_HOME");
-    fs::path const xdgConfigDir = (xdgConfigHome != nullptr && *xdgConfigHome != '\0') ? fs::path(xdgConfigHome) :
-        homeDir / ".config";
+    fs::path const xdgConfigHome = Util::GetEnvironmentVariable("XDG_CONFIG_HOME", {});
+    fs::path const xdgConfigDir = !xdgConfigHome.empty() ? xdgConfigHome : homeDir / ".config";
 
     fs::path const commonDataDir = xdgConfigDir / Detail::CommonDataDirName;
     if (IsValidDataDir(commonDataDir, intention))
@@ -322,13 +325,9 @@ fs::path TransmissionStateStore::GuessDataDir(Intention::Enum intention) const
         return daemonDataDir;
     }
 
-    return fs::path();
-
-#else
-
-    throw NotImplementedException(__func__);
-
 #endif
+
+    return {};
 }
 
 bool TransmissionStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum intention) const
@@ -398,8 +397,8 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
     TorrentInfo torrent = box.Torrent;
     torrent.SetTrackers(box.Trackers);
 
-    std::string const baseName = std::getenv("BT_MIGRATE_TRANSMISSION_2_9X") == nullptr ? torrent.GetInfoHash() :
-        resume[RField::Name].as_string() + '.' + torrent.GetInfoHash().substr(0, 16);
+    std::string const baseName = Util::GetEnvironmentVariable("BT_MIGRATE_TRANSMISSION_2_9X", {}).empty() ?
+        torrent.GetInfoHash() : resume[RField::Name].as_string() + '.' + torrent.GetInfoHash().substr(0, 16);
 
     fs::path const torrentFilePath = Detail::GetTorrentFilePath(dataDir, baseName, m_stateType);
     fs::create_directories(torrentFilePath.parent_path());

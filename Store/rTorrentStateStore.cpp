@@ -280,11 +280,11 @@ fs::path rTorrentStateStore::GuessDataDir(Intention::Enum intention) const
 {
 #ifndef _WIN32
 
-    fs::path const homeDir = std::getenv("HOME");
+    fs::path const homeDir = Util::GetEnvironmentVariable("HOME", {});
 
-    if (!fs::is_regular_file(homeDir / Detail::ConfigFilename))
+    if (homeDir.empty() || !fs::is_regular_file(homeDir / Detail::ConfigFilename))
     {
-        return fs::path();
+        return {};
     }
 
     pt::ptree config;
@@ -294,18 +294,14 @@ fs::path rTorrentStateStore::GuessDataDir(Intention::Enum intention) const
     }
 
     fs::path const dataDirPath = Util::GetPath(config.get<std::string>("session"));
-    if (!IsValidDataDir(dataDirPath, intention))
+    if (IsValidDataDir(dataDirPath, intention))
     {
-        return fs::path();
+        return dataDirPath;
     }
 
-    return dataDirPath;
-
-#else
-
-    throw NotImplementedException(__func__);
-
 #endif
+
+    return {};
 }
 
 bool rTorrentStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum intention) const

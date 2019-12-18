@@ -123,4 +123,10 @@ void SortJsonObjectKeys(ojson& object)
         [](auto const& lhs, auto const& rhs) { return lhs.key().compare(rhs.key()) < 0; });
 }
 
+std::string GetEnvironmentVariable(std::string const& name, std::string const& defaultValue)
+{
+    auto const* value = std::getenv(name.c_str());
+    return value != nullptr ? value : defaultValue;
+}
+
 } // namespace Util
