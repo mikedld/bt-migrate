@@ -12,7 +12,9 @@ add_library(BtMigrateStore
     rTorrentStateStore.cpp
     rTorrentStateStore.h
     uTorrentStateStore.cpp
-    uTorrentStateStore.h)
+    uTorrentStateStore.h
+    uTorrentWebStateStore.cpp
+    uTorrentWebStateStore.h)
 
 target_link_libraries(BtMigrateStore
     PUBLIC
@@ -26,4 +28,5 @@ target_link_libraries(BtMigrateStore
         Boost::filesystem
         jsoncons::jsoncons
         pugixml::pugixml
+        sqlite_orm::sqlite_orm
         Threads::Threads)

@@ -34,6 +34,12 @@ add_library(pugixml::pugixml INTERFACE IMPORTED)
 set_property(TARGET pugixml::pugixml PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/ThirdParty/pugixml/src")
 set_property(TARGET pugixml::pugixml PROPERTY INTERFACE_COMPILE_DEFINITIONS PUGIXML_HEADER_ONLY)
 
+add_library(sqlite_orm::sqlite_orm INTERFACE IMPORTED)
+set_property(TARGET sqlite_orm::sqlite_orm PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/ThirdParty/sqlite_orm/include")
+
+find_package(SQLite3 REQUIRED)
+target_link_libraries(sqlite_orm::sqlite_orm INTERFACE SQLite::SQLite3)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)

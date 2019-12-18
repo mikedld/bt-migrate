@@ -12,7 +12,7 @@ jobs:
       - name: Install dependencies
         run: |
           printf 'Package: *\nPin: origin ppa.launchpad.net\nPin-Priority: -10\n' | sudo tee /etc/apt/preferences.d/launchpad.pref >/dev/null
-          sudo apt-get install -y libboost-date-time-dev libboost-filesystem-dev libboost-locale-dev libboost-program-options-dev libboost-system-dev libboost-thread-dev libicu-dev
+          sudo apt-get install -y libboost-date-time-dev libboost-filesystem-dev libboost-locale-dev libboost-program-options-dev libboost-system-dev libboost-thread-dev libicu-dev libsqlite3-dev
           cd /tmp && wget --no-check-certificate https://cmake.org/files/v3.16/cmake-3.16.1-Linux-x86_64.tar.gz -O cmake.tar.gz && tar xf cmake.tar.gz && ln -s cmake-3.16.1-Linux-x86_64 cmake
       - name: Configure
         run: /tmp/cmake/bin/cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBT_MIGRATE_PREFER_STATIC_LIBS=ON -DBT_MIGRATE_BOOST_USES_ICU=ON
@@ -21,13 +21,19 @@ jobs:
   build-windows:
     name: Windows
     runs-on: [windows-latest]
+    env:
+      VCPKG_DEFAULT_TRIPLET: x64-windows
+      VCPKG_TARGET_ARCHITECTURE: x64
+      VCPKG_LIBRARY_LINKAGE: static
     steps:
       - name: Checkout
         uses: actions/checkout@v1
         with:
           submodules: recursive
+      - name: Install dependencies
+        run: vcpkg install sqlite3
       - name: Configure
-        run: cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBT_MIGRATE_PREFER_STATIC_LIBS=ON
+        run: cmake -S . -B _build -A x64 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBT_MIGRATE_PREFER_STATIC_LIBS=ON -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
       - name: Build
         run: cmake --build _build --config RelWithDebInfo
   build-mac:

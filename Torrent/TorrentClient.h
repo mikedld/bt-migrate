@@ -26,7 +26,8 @@ struct TorrentClient
         rTorrent,
         Transmission,
         TransmissionMac,
-        uTorrent
+        uTorrent,
+        uTorrentWeb
     };
 
     static Enum const FirstClient = Deluge;

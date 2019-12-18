@@ -20,6 +20,7 @@
 #include "rTorrentStateStore.h"
 #include "TransmissionStateStore.h"
 #include "uTorrentStateStore.h"
+#include "uTorrentWebStateStore.h"
 
 #include "Common/Exception.h"
 
@@ -43,6 +44,8 @@ ITorrentStateStorePtr TorrentStateStoreFactory::CreateForClient(TorrentClient::E
         return std::make_unique<TransmissionStateStore>(TransmissionStateType::Mac);
     case TorrentClient::uTorrent:
         return std::make_unique<uTorrentStateStore>();
+    case TorrentClient::uTorrentWeb:
+        return std::make_unique<uTorrentWebStateStore>();
     }
 
     throw Exception("Unknown torrent client");

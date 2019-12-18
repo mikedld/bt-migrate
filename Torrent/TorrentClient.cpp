@@ -28,6 +28,7 @@ std::string const rTorrent = "rTorrent";
 std::string const Transmission = "Transmission";
 std::string const TransmissionMac = "TransmissionMac";
 std::string const uTorrent = "uTorrent";
+std::string const uTorrentWeb = "uTorrentWeb";
 
 } // namespace
 
@@ -45,6 +46,8 @@ std::string TorrentClient::ToString(Enum client)
         return ClientName::TransmissionMac;
     case uTorrent:
         return ClientName::uTorrent;
+    case uTorrentWeb:
+        return ClientName::uTorrentWeb;
     }
 
     throw Exception("Unknown torrent client");
@@ -73,6 +76,10 @@ TorrentClient::Enum TorrentClient::FromString(std::string client)
     else if (iequals(client, ClientName::uTorrent))
     {
         return uTorrent;
+    }
+    else if (iequals(client, ClientName::uTorrentWeb))
+    {
+        return uTorrentWeb;
     }
 
     throw Exception("Unknown torrent client");

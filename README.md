@@ -36,6 +36,7 @@ Currently supported clients include (names are case-insensitive):
   * "Transmission" (only import)
   * "TransmissionMac" (only import)
   * "uTorrent" (only export)
+  * "uTorrentWeb" (only export)
 
 Whether only `--source`, only `--source-dir`, or both (same goes for target arguments) are required depends on program ability to guess needed information. If client name allows (by checking various places) to find data directory, then the latter is optional. If path to data directory allows (by analyzing its content) to guess corresponding client name, then the latter is optional. Sometimes it's not possible to guess anything, or name/path guessed don't suit you, so both arguments are required.
 
