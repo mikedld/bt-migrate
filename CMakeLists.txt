@@ -10,7 +10,13 @@ if(BT_MIGRATE_PREFER_STATIC_LIBS)
     endif()
 endif()
 
-find_package(Boost 1.50 REQUIRED COMPONENTS date_time filesystem locale program_options system thread)
+find_package(Boost 1.58 REQUIRED COMPONENTS date_time filesystem locale program_options system thread)
+
+if(BT_MIGRATE_PREFER_STATIC_LIBS)
+    target_link_libraries(Boost::filesystem
+        INTERFACE
+            Boost::system)
+endif()
 
 if(BT_MIGRATE_BOOST_USES_ICU)
     find_package(ICU REQUIRED data i18n uc)
