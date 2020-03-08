@@ -20,9 +20,14 @@
 #include "Common/Throw.h"
 #include "Common/Util.h"
 
+#include <boost/endian/arithmetic.hpp>
+#include <boost/version.hpp>
+
+#include <algorithm>
 #include <iostream>
 #include <map>
 #include <stack>
+#include <type_traits>
 
 namespace
 {
@@ -73,22 +78,39 @@ enum opcode
     BINFLOAT        = 'G',
 
     /* Protocol 2. */
-    PROTO       = '\x80',
-    NEWOBJ      = '\x81',
-    EXT1        = '\x82',
-    EXT2        = '\x83',
-    EXT4        = '\x84',
-    TUPLE1      = '\x85',
-    TUPLE2      = '\x86',
-    TUPLE3      = '\x87',
-    NEWTRUE     = '\x88',
-    NEWFALSE    = '\x89',
-    LONG1       = '\x8a',
-    LONG4       = '\x8b',
+    PROTO       = 0x80,
+    NEWOBJ      = 0x81,
+    EXT1        = 0x82,
+    EXT2        = 0x83,
+    EXT4        = 0x84,
+    TUPLE1      = 0x85,
+    TUPLE2      = 0x86,
+    TUPLE3      = 0x87,
+    NEWTRUE     = 0x88,
+    NEWFALSE    = 0x89,
+    LONG1       = 0x8a,
+    LONG4       = 0x8b,
 
     /* Protocol 3 (Python 3.x) */
     BINBYTES       = 'B',
-    SHORT_BINBYTES = 'C'
+    SHORT_BINBYTES = 'C',
+
+    /* Protocol 4 */
+    SHORT_BINUNICODE = 0x8c,
+    BINUNICODE8      = 0x8d,
+    BINBYTES8        = 0x8e,
+    EMPTY_SET        = 0x8f,
+    ADDITEMS         = 0x90,
+    FROZENSET        = 0x91,
+    NEWOBJ_EX        = 0x92,
+    STACK_GLOBAL     = 0x93,
+    MEMOIZE          = 0x94,
+    FRAME            = 0x95,
+
+    /* Protocol 5 */
+    BYTEARRAY8       = 0x96,
+    NEXT_BUFFER      = 0x97,
+    READONLY_BUFFER  = 0x98
 };
 
 struct StackItem
@@ -240,6 +262,46 @@ void PopMark(std::stack<StackItem>& stack)
     }
 }
 
+template<typename NumberT>
+typename NumberT::value_type GetBinNumber(std::istream& stream)
+{
+#if BOOST_VERSION < 107200
+    static_assert(std::is_integral_v<typename NumberT::value_type>);
+#endif
+
+    NumberT result = {};
+    stream.read(const_cast<char*>(reinterpret_cast<const char*>(result.data())), sizeof(typename NumberT::value_type));
+    return result;
+}
+
+double GetBinBigDouble(std::istream& stream)
+{
+#if BOOST_VERSION >= 107200
+    return GetBinNumber<boost::endian::big_float64_t>(stream);
+#else
+    char result[sizeof(double)];
+    stream.read(result, sizeof(result));
+
+    if (boost::endian::order::native == boost::endian::order::little)
+    {
+        std::reverse(result, result + sizeof(result));
+    }
+
+    return *reinterpret_cast<const double*>(result);
+#endif
+}
+
+template<typename LengthT>
+std::string GetBinUnicode(std::istream& stream)
+{
+    LengthT const length = GetBinNumber<LengthT>(stream);
+
+    std::string result;
+    result.resize(length);
+    stream.read(result.data(), length);
+    return result;
+}
+
 } // namespace
 
 PickleCodec::PickleCodec() = default;
@@ -247,15 +309,17 @@ PickleCodec::~PickleCodec() = default;
 
 void PickleCodec::Decode(std::istream& stream, ojson& root) const
 {
-    std::stack<StackItem> stack;
+    std::stack<StackItem> stack, stack2;
     std::map<long long, StackItem> memo;
+
+    [[maybe_unused]] int proto = 0;
 
     bool stopped = false;
     StackItem currentItem, currentItem2;
-    std::string buffer;
+    std::string buffer, buffer2;
     while (!stopped && !stream.eof())
     {
-        int const code = stream.get();
+        int const code = GetBinNumber<boost::endian::little_uint8_t>(stream);
         switch (code)
         {
         case MARK:
@@ -357,8 +421,31 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
             break;
 
         case EMPTY_LIST:
+            stack.push(StackItem(code, ojson::array()));
+            break;
+
+        case TUPLE3:
+            stack2.push(std::move(stack.top()));
+            stack.pop();
+            [[fallthrough]];
+
+        case TUPLE2:
+            stack2.push(std::move(stack.top()));
+            stack.pop();
+            [[fallthrough]];
+
+        case TUPLE1:
+            stack2.push(std::move(stack.top()));
+            stack.pop();
+            [[fallthrough]];
+
         case EMPTY_TUPLE:
             stack.push(StackItem(code, ojson::array()));
+            while (!stack2.empty())
+            {
+                stack.top().Value.push_back(std::move(stack2.top().Value));
+                stack2.pop();
+            }
             break;
 
         case APPEND:
@@ -391,24 +478,95 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
             stack.top().Value.set(currentItem2.Value.as<std::string>(), currentItem.Value);
             break;
 
-        // case PERSID:
-        // case REDUCE:
-        // case GLOBAL:
-        // case APPENDS:
-        // case OBJ:
-        // case SETITEMS:
-        // case BINGET:
-        // case LONG_BINGET:
-        // case BINPUT:
-        // case LONG_BINPUT:
-        // case BINPERSID:
-        // case BINFLOAT:
-        // case BININT:
-        // case BININT1:
-        // case BININT2:
-        // case BINSTRING:
-        // case SHORT_BINSTRING:
-        // case BINUNICODE:
+        case PROTO:
+            proto = static_cast<unsigned int>(stream.get());
+            break;
+
+        case GLOBAL:
+            std::getline(stream, buffer, '\n');
+            std::getline(stream, buffer2, '\n');
+            stack.push(StackItem(code, buffer + ':' + buffer2));
+            break;
+
+        case BINPUT:
+            memo[GetBinNumber<boost::endian::little_uint8_t>(stream)] = stack.top();
+            break;
+
+        case NEWOBJ:
+            currentItem = stack.top();
+            stack.pop();
+            currentItem2 = stack.top();
+            stack.pop();
+            stack.push(StackItem(code, ojson::object()));
+            break;
+
+        case BINUNICODE:
+            stack.push(StackItem(code, GetBinUnicode<boost::endian::little_uint32_t>(stream)));
+            break;
+
+        case NEWTRUE:
+            stack.push(StackItem(code, true));
+            break;
+
+        case NEWFALSE:
+            stack.push(StackItem(code, false));
+            break;
+
+        case BINFLOAT:
+            stack.push(StackItem(code, GetBinBigDouble(stream)));
+            break;
+
+        case BININT1:
+            stack.push(StackItem(code, GetBinNumber<boost::endian::little_int8_t>(stream)));
+            break;
+
+        case APPENDS:
+            while (!stack.empty() && stack.top().Type != MARK)
+            {
+                stack2.push(std::move(stack.top()));
+                stack.pop();
+            }
+            stack.pop();
+            while (!stack2.empty())
+            {
+                stack.top().Value.push_back(std::move(stack2.top().Value));
+                stack2.pop();
+            }
+            break;
+
+        case BININT:
+            stack.push(StackItem(code, GetBinNumber<boost::endian::little_int32_t>(stream)));
+            break;
+
+        case BINGET:
+            stack.push(memo[GetBinNumber<boost::endian::little_uint8_t>(stream)]);
+            break;
+
+        case SETITEMS:
+            while (!stack.empty() && stack.top().Type != MARK)
+            {
+                stack2.push(std::move(stack.top()));
+                stack.pop();
+            }
+            stack.pop();
+            while (!stack2.empty())
+            {
+                currentItem = std::move(stack2.top());
+                stack2.pop();
+                currentItem2 = std::move(stack2.top());
+                stack2.pop();
+                stack.top().Value.set(currentItem.Value.as<std::string>(), std::move(currentItem2.Value));
+            }
+            break;
+
+        case LONG_BINPUT:
+            memo[GetBinNumber<boost::endian::little_uint32_t>(stream)] = stack.top();
+            break;
+
+        case LONG_BINGET:
+            stack.push(memo[GetBinNumber<boost::endian::little_uint32_t>(stream)]);
+            break;
+
         default:
             Throw<Exception>() << "Pickle opcode " << code << " not yet supported";
         }
