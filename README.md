@@ -6,10 +6,21 @@ About
 
 Inspired by [old 'wontfix' Transmission ticket](https://trac.transmissionbt.com/ticket/2642) and couple of mentions on [Transmission IRC channel](irc://irc.freenode.net/transmission), here is a tool to ease migration from one BitTorrent client to another.
 
+Prerequisites
+=============
+
+- You will need [boost](http://www.boost.org/) library installed.
+- sqlite3
+- cmake
+- g++
+
+For e.g. on Ubuntu:
+```
+$ sudo apt install libsqlite3-dev libboost-all-dev build-essential
+```
+
 Building
 ========
-
-You will need [boost](http://www.boost.org/) library installed.
 
 Clone, generate environment for your favorite build system (we use CMake as abstraction layer), then compile. For example,
 
@@ -18,6 +29,7 @@ Clone, generate environment for your favorite build system (we use CMake as abst
     % git submodule update --init --force
     % mkdir _build
     % cd _build
+    % export CXX=g++
     % cmake ..
     % cmake --build .
 
