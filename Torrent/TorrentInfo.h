@@ -42,6 +42,8 @@ public:
     std::string GetName() const;
     boost::filesystem::path GetFilePath(std::size_t fileIndex) const;
 
+    ojson GetFiles(const std::string&) const;
+
     void SetTrackers(std::vector<std::vector<std::string>> const& trackers);
 
     static TorrentInfo Decode(std::istream& stream, IStructuredDataCodec const& codec);

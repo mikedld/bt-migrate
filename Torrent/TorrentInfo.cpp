@@ -99,6 +99,26 @@ std::string TorrentInfo::GetName() const
     return info["name"].as<std::string>();
 }
 
+ojson TorrentInfo::GetFiles(const std::string &base) const
+{
+	ojson result = ojson::array();
+	
+	ojson const& info = m_torrent["info"];
+	if (!info.contains("files")) {
+		throw 20;
+	}
+        ojson const& files = info["files"];
+	for (std::size_t i = 0; i < files.size(); i++) {
+		std::string file_path = base;
+       		for (ojson const& pathPart : files[i]["path"].array_range())
+       		{
+			file_path += "/" + pathPart.as<std::string>();
+		}
+        result.add(file_path);
+	}
+	return result;
+}
+
 fs::path TorrentInfo::GetFilePath(std::size_t fileIndex) const
 {
     fs::path result;

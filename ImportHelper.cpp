@@ -87,7 +87,7 @@ void ImportHelper::ImportImpl(fs::path const& targetDataDir, ITorrentStateIterat
 
         try
         {
-            Logger(Logger::Info) << prefix << "Import started";
+            Logger(Logger::Info) << prefix << "Import started, SavePath: " << box.SavePath;
             m_targetStore->Import(targetDataDir, box, m_fileStreamProvider);
             ++result.SuccessCount;
             Logger(Logger::Info) << prefix << "Import succeeded";

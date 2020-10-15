@@ -55,6 +55,7 @@ std::string const Path = "path";
 std::string const Prio = "prio";
 std::string const Started = "started";
 std::string const Targets = "targets";
+std::string const Caption = "caption";
 std::string const Trackers = "trackers";
 std::string const Uploaded = "uploaded";
 std::string const UpSpeed = "upspeed";
@@ -181,6 +182,7 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
     box.UploadedSize = resume[RField::Uploaded].as<std::uint64_t>();
     box.CorruptedSize = resume[RField::Corrupt].as<std::uint64_t>();
     box.SavePath = Util::GetPath(resume[RField::Path].as<std::string>());
+    box.Caption = resume[RField::Caption].as<std::string>();
     box.BlockSize = box.Torrent.GetPieceSize();
     box.RatioLimit = FromStoreRatioLimit(resume[RField::OverrideSeedSettings], resume[RField::WantedRatio]);
     box.DownloadSpeedLimit = FromStoreSpeedLimit(resume[RField::DownSpeed]);
@@ -195,7 +197,7 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
         fs::path const changedPath = GetChangedFilePath(targets, i);
 
         Box::FileInfo file;
-        file.DoNotDownload = filePriority == Detail::DoNotDownloadPriority;
+        file.DoNotDownload = (filePriority == Detail::DoNotDownloadPriority || filePriority < 0);
         file.Priority = file.DoNotDownload ? Box::NormalPriority : BoxHelper::Priority::FromStore(filePriority,
             Detail::MinPriority, Detail::MaxPriority);
         file.Path = changedPath;
@@ -231,6 +233,7 @@ bool uTorrentTorrentStateIterator::GetNext(fs::path& torrentFilePath, ojson& res
 
     for (; m_torrentIt != m_torrentEnd; ++m_torrentIt)
      {
+	     try{
         torrentFilePath = m_dataDir / std::string(m_torrentIt->key());
         if (torrentFilePath.extension().string() != Detail::TorrentFileExtension)
         {
@@ -239,10 +242,12 @@ bool uTorrentTorrentStateIterator::GetNext(fs::path& torrentFilePath, ojson& res
 
         if (!fs::is_regular_file(torrentFilePath))
         {
-            Logger(Logger::Warning) << "File " << torrentFilePath << " is not a regular file, skipping";
+            //Logger(Logger::Warning) << "File " << torrentFilePath << " is not a regular file, skipping";
             continue;
         }
-
+        } catch (boost::filesystem::filesystem_error) {
+		continue;
+	}
         resume = m_torrentIt->value();
 
         ++m_torrentIt;
