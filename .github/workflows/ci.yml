@@ -37,7 +37,7 @@ jobs:
       - name: Install dependencies
         run: vcpkg install sqlite3
       - name: Configure
-        run: cmake -S . -B _build -A x64 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBT_MIGRATE_PREFER_STATIC_LIBS=ON -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+        run: cmake -S . -B _build -A x64 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBT_MIGRATE_PREFER_STATIC_LIBS=ON "-DBOOST_ROOT=${env:BOOST_ROOT_1_72_0}" -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
       - name: Build
         run: cmake --build _build --config RelWithDebInfo
       - name: Prepare artifacts
