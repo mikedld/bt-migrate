@@ -45,8 +45,8 @@ namespace
 void PrintVersion()
 {
     std::cout <<
-        "Torrent state migration tool, version 1.0" << std::endl <<
-        "Copyright (C) 2014 Mike Gelfand <mikedld@mikedld.com>" << std::endl <<
+        "Torrent state migration tool, version " << BTMIGRATE_VERSION << std::endl <<
+        "Copyright (C) 2014-2021 Mike Gelfand <mikedld@mikedld.com>" << std::endl <<
         std::endl <<
         "This program comes with ABSOLUTELY NO WARRANTY. This is free software," << std::endl <<
         "and you are welcome to redistribute it under certain conditions;" << std::endl <<
