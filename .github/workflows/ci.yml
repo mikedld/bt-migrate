@@ -1,71 +1,71 @@
 name: CI
 on: [push, pull_request]
+env:
+  VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/_vcpkg_cache
 jobs:
-  build-linux:
-    name: Linux
-    runs-on: [ubuntu-latest]
+  build:
+    runs-on: ["${{ matrix.image }}"]
+    strategy:
+      matrix:
+        os: [linux, mac, windows]
+        include:
+        - os: linux
+          image: ubuntu-latest
+        - os: mac
+          image: macOS-latest
+        - os: windows
+          image: windows-latest
+          cmake_args: -A x64
     steps:
-      - name: Checkout
-        uses: actions/checkout@v1
-        with:
-          submodules: recursive
-      - name: Install dependencies
-        run: |
-          printf 'Package: *\nPin: origin ppa.launchpad.net\nPin-Priority: -10\n' | sudo tee /etc/apt/preferences.d/launchpad.pref >/dev/null
-          sudo apt-get install -y libboost-date-time-dev libboost-filesystem-dev libboost-locale-dev libboost-program-options-dev libboost-system-dev libboost-thread-dev libicu-dev libsqlite3-dev
-          cd /tmp && wget --no-check-certificate https://cmake.org/files/v3.16/cmake-3.16.1-Linux-x86_64.tar.gz -O cmake.tar.gz && tar xf cmake.tar.gz && ln -s cmake-3.16.1-Linux-x86_64 cmake
-      - name: Configure
-        run: /tmp/cmake/bin/cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBT_MIGRATE_PREFER_STATIC_LIBS=ON -DBT_MIGRATE_BOOST_USES_ICU=ON
-      - name: Build
-        run: /tmp/cmake/bin/cmake --build _build --config RelWithDebInfo
-      - uses: actions/upload-artifact@v1
-        with:
-          name: LinuxBinaries
-          path: _build/BtMigrate
-  build-windows:
-    name: Windows
-    runs-on: [windows-latest]
-    env:
-      VCPKG_DEFAULT_TRIPLET: x64-windows
-      VCPKG_TARGET_ARCHITECTURE: x64
-      VCPKG_LIBRARY_LINKAGE: static
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v1
-        with:
-          submodules: recursive
-      - name: Install dependencies
-        run: vcpkg install sqlite3
-      - name: Configure
-        run: cmake -S . -B _build -A x64 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBT_MIGRATE_PREFER_STATIC_LIBS=ON "-DBOOST_ROOT=${env:BOOST_ROOT_1_72_0}" -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
-      - name: Build
-        run: cmake --build _build --config RelWithDebInfo
-      - name: Prepare artifacts
-        run: |
-          mkdir _bin
-          copy _build\RelWithDebInfo\BtMigrate.exe _bin
-          copy _build\RelWithDebInfo\BtMigrate.pdb _bin
-      - uses: actions/upload-artifact@v1
-        with:
-          name: WindowsBinaries
-          path: _bin
-  build-mac:
-    name: Mac
-    runs-on: [macOS-latest]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v1
-        with:
-          submodules: recursive
-      - name: Install dependencies
-        run: brew install boost icu4c
-      - name: Configure
-        run: cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBT_MIGRATE_PREFER_STATIC_LIBS=ON -DBT_MIGRATE_BOOST_USES_ICU=ON -DICU_ROOT=/usr/local/opt/icu4c
-        env:
-          LDFLAGS: -liconv
-      - name: Build
-        run: cmake --build _build --config RelWithDebInfo
-      - uses: actions/upload-artifact@v1
-        with:
-          name: MacBinaries
-          path: _build/BtMigrate
+    - name: Checkout
+      uses: actions/checkout@v1
+    - name: Create vcpkg cache directory
+      run: mkdir _vcpkg_cache
+    - name: Cache node modules
+      uses: actions/cache@v2
+      env:
+        cache_name: vcpkg
+      with:
+        path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+        key: ${{ runner.os }}-build-${{ env.cache_name }}-${{ hashFiles('vcpkg.cmake', 'vcpkg.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache_name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+    - name: Install dependencies (linux)
+      if: matrix.os == 'linux'
+      run: curl -sSL https://cmake.org/files/v3.18/cmake-3.18.5-Linux-x86_64.tar.gz -o - | sudo tar xzf - --strip-components 1 -C /usr/local
+    - name: CMake version
+      run: cmake --version
+    - name: Configure
+      run: cmake -S . -B _build -DCMAKE_BUILD_TYPE=RelWithDebInfo ${{ matrix.cmake_args }}
+    - name: Build
+      run: cmake --build _build --config RelWithDebInfo
+    - name: Prepare artifacts (linux)
+      if: matrix.os == 'linux'
+      run: |
+        mkdir _bin
+        cd _bin
+        cp ../_build/BtMigrate .
+        objcopy --only-keep-debug BtMigrate BtMigrate.debug
+        objcopy --add-gnu-debuglink=BtMigrate.debug BtMigrate
+        strip -x BtMigrate
+    - name: Prepare artifacts (mac)
+      if: matrix.os == 'mac'
+      run: |
+        mkdir _bin
+        cd _bin
+        cp ../_build/BtMigrate .
+        dsymutil -f BtMigrate
+        strip -x BtMigrate
+    - name: Prepare artifacts (windows)
+      if: matrix.os == 'windows'
+      run: |
+        mkdir _bin
+        cd _bin
+        copy ..\_build\RelWithDebInfo\BtMigrate.exe .
+        copy ..\_build\RelWithDebInfo\BtMigrate.pdb .
+    - uses: actions/upload-artifact@v1
+      with:
+        name: ${{ matrix.os }}-binaries
+        path: _bin

@@ -1,0 +1,18 @@
+{
+  "name": "bt-migrate",
+  "version-string": "0.1",
+  "dependencies": [
+    "boost-date-time",
+    "boost-filesystem",
+    "boost-format",
+    "boost-locale",
+    "boost-program-options",
+    "boost-property-tree",
+    "boost-system",
+    "boost-thread",
+    "boost-uuid",
+    "jsoncons",
+    "pugixml",
+    "sqlite-orm"
+  ]
+}

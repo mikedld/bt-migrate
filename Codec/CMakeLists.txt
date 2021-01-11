@@ -14,4 +14,4 @@ target_link_libraries(BtMigrateCodec
 
 target_link_libraries(BtMigrateCodec
     PUBLIC
-        jsoncons::jsoncons)
+        jsoncons)

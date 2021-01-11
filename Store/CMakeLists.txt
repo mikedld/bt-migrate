@@ -26,7 +26,7 @@ target_link_libraries(BtMigrateStore
     PRIVATE
         Boost::boost
         Boost::filesystem
-        jsoncons::jsoncons
+        jsoncons
         pugixml::pugixml
         sqlite_orm::sqlite_orm
         Threads::Threads)

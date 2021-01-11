@@ -1,9 +1,0 @@
-[submodule "ThirdParty/jsoncons"]
-	path = ThirdParty/jsoncons
-	url = https://github.com/danielaparker/jsoncons
-[submodule "ThirdParty/pugixml"]
-	path = ThirdParty/pugixml
-	url = https://github.com/zeux/pugixml
-[submodule "ThirdParty/sqlite_orm"]
-	path = ThirdParty/sqlite_orm
-	url = https://github.com/fnc12/sqlite_orm
