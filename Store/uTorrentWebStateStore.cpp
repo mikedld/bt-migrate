@@ -21,7 +21,6 @@
 #include "Common/IFileStreamProvider.h"
 #include "Common/IForwardIterator.h"
 #include "Common/Logger.h"
-#include "Common/Throw.h"
 #include "Common/Util.h"
 #include "Torrent/Box.h"
 
@@ -101,8 +100,7 @@ class uTorrentWebTorrentStateIterator : public ITorrentStateIterator
     using ResumeInfoIterator = std::invoke_result_t<decltype(&ResumeInfoEnumerator::begin), ResumeInfoEnumerator>;
 
 public:
-    uTorrentWebTorrentStateIterator(fs::path const& stateDir, ResumeDatabase&& resumeDb,
-        IFileStreamProvider const& fileStreamProvider);
+    uTorrentWebTorrentStateIterator(fs::path const& stateDir, ResumeDatabase&& resumeDb);
 
 public:
     // ITorrentStateIterator
@@ -114,7 +112,6 @@ private:
 private:
     fs::path const m_stateDir;
     ResumeDatabase m_resumeDb;
-    IFileStreamProvider const& m_fileStreamProvider;
     ResumeInfoEnumerator m_resumeInfoEnumerator;
     ResumeInfoIterator m_resumeInfoIt;
     ResumeInfoIterator m_resumeInfoEnd;
@@ -122,11 +119,9 @@ private:
     BencodeCodec const m_bencoder;
 };
 
-uTorrentWebTorrentStateIterator::uTorrentWebTorrentStateIterator(fs::path const& stateDir, ResumeDatabase&& resumeDb,
-    IFileStreamProvider const& fileStreamProvider) :
+uTorrentWebTorrentStateIterator::uTorrentWebTorrentStateIterator(fs::path const& stateDir, ResumeDatabase&& resumeDb) :
     m_stateDir(stateDir),
     m_resumeDb(resumeDb),
-    m_fileStreamProvider(fileStreamProvider),
     m_resumeInfoEnumerator(m_resumeDb.iterate<Detail::ResumeInfo>()),
     m_resumeInfoIt(m_resumeInfoEnumerator.begin()),
     m_resumeInfoEnd(m_resumeInfoEnumerator.end()),
@@ -208,7 +203,7 @@ TorrentClient::Enum uTorrentWebStateStore::GetTorrentClient() const
     return TorrentClient::uTorrentWeb;
 }
 
-fs::path uTorrentWebStateStore::GuessDataDir(Intention::Enum intention) const
+fs::path uTorrentWebStateStore::GuessDataDir([[maybe_unused]] Intention::Enum intention) const
 {
 #ifdef _WIN32
 
@@ -231,13 +226,13 @@ bool uTorrentWebStateStore::IsValidDataDir(fs::path const& dataDir, Intention::E
         fs::is_regular_file(dataDir / Detail::StoreFilename);
 }
 
-ITorrentStateIteratorPtr uTorrentWebStateStore::Export(fs::path const& dataDir, IFileStreamProvider const& fileStreamProvider) const
+ITorrentStateIteratorPtr uTorrentWebStateStore::Export(fs::path const& dataDir, IFileStreamProvider const& /*fileStreamProvider*/) const
 {
     Logger(Logger::Debug) << "[uTorrentWeb] Loading " << Detail::ResumeFilename;
 
     auto resumeDb = OpenResumeDatabase(dataDir / Detail::ResumeFilename);
 
-    return std::make_unique<uTorrentWebTorrentStateIterator>(dataDir, std::move(resumeDb), fileStreamProvider);
+    return std::make_unique<uTorrentWebTorrentStateIterator>(dataDir, std::move(resumeDb));
 }
 
 void uTorrentWebStateStore::Import(fs::path const& /*dataDir*/, Box const& /*box*/,

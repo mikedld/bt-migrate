@@ -20,7 +20,6 @@
 #include "Common/Exception.h"
 #include "Common/Logger.h"
 #include "Common/SignalHandler.h"
-#include "Common/Throw.h"
 #include "Store/ITorrentStateStore.h"
 #include "Store/TorrentStateStoreFactory.h"
 #include "Torrent/Box.h"
@@ -29,6 +28,8 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/locale.hpp>
 #include <boost/program_options.hpp>
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include <csignal>
 #include <exception>
@@ -76,7 +77,7 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
             clientDataDir = result->GuessDataDir(intention);
             if (clientDataDir.empty())
             {
-                Throw<Exception>() << "No data directory found for " << lowerCaseClientName << " torrent client";
+                throw Exception(fmt::format("No data directory found for {} torrent client", lowerCaseClientName));
             }
         }
     }
@@ -86,7 +87,7 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
     }
     else
     {
-        Throw<Exception>() << upperCaseClientName << " torrent client name and/or data directory are not specified";
+        throw Exception(fmt::format("{} torrent client name and/or data directory are not specified", upperCaseClientName));
     }
 
     clientName = TorrentClient::ToString(result->GetTorrentClient());
@@ -94,8 +95,7 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
 
     if (!result->IsValidDataDir(clientDataDir, intention))
     {
-        Throw<Exception>() << "Bad " << lowerCaseClientName << " data directory: " <<
-            clientDataDir;
+        throw Exception(fmt::format("Bad {} data directory: {}", lowerCaseClientName, clientDataDir));
     }
 
     Logger(Logger::Info) << upperCaseClientName << ": " << clientName << " (" << clientDataDir << ")";

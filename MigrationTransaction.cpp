@@ -18,11 +18,12 @@
 
 #include "Common/Exception.h"
 #include "Common/Logger.h"
-#include "Common/Throw.h"
 
 #include <boost/date_time.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include <locale>
 #include <sstream>
@@ -105,7 +106,7 @@ IReadStreamPtr MigrationTransaction::GetReadStream(fs::path const& path) const
     }
     catch (std::exception const&)
     {
-        Throw<Exception>() << "Unable to open file for reading: " << path;
+        throw Exception(fmt::format("Unable to open file for reading: {}", path));
     }
 
     return result;
@@ -143,7 +144,7 @@ IWriteStreamPtr MigrationTransaction::GetWriteStream(fs::path const& path)
     }
     catch (std::exception const&)
     {
-        Throw<Exception>() << "Unable to open file for writing: " << path;
+        throw Exception(fmt::format("Unable to open file for writing: {}", path));
     }
 
     return result;

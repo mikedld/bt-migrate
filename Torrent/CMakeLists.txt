@@ -19,4 +19,5 @@ target_link_libraries(BtMigrateTorrent
         Boost::filesystem
         jsoncons
     PRIVATE
-        Boost::boost)
+        Boost::boost
+        fmt::fmt)

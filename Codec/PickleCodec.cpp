@@ -17,11 +17,11 @@
 #include "PickleCodec.h"
 
 #include "Common/Exception.h"
-#include "Common/Throw.h"
 #include "Common/Util.h"
 
 #include <boost/endian/arithmetic.hpp>
 #include <boost/version.hpp>
+#include <fmt/format.h>
 
 #include <algorithm>
 #include <iostream>
@@ -122,14 +122,14 @@ struct StackItem
 
     }
 
-    explicit StackItem(char type, ojson const& value = ojson()) :
+    explicit StackItem(int type, ojson const& value = ojson()) :
         Type(type),
         Value(value)
     {
         //
     }
 
-    char Type;
+    int Type;
     ojson Value;
 };
 
@@ -236,7 +236,7 @@ std::string UnicodeToUtf8(std::string const& text)
             codeBuffer += *(++it);
 
             unsigned int const code2 = std::strtol(codeBuffer.c_str(), nullptr, 16);
-            if (code2 <= 0xdc00 && code2 >= 0xdfff)
+            if (code2 >= 0xdc00 && code2 <= 0xdfff)
             {
                 throw Exception("Invalid unicode code point");
             }
@@ -395,7 +395,7 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
             {
                 currentItem2 = stack.top();
                 stack.pop();
-                currentItem.Value.set(stack.top().Value.as<std::string>(), currentItem2.Value);
+                currentItem.Value.insert_or_assign(stack.top().Value.as<std::string>(), currentItem2.Value);
                 stack.pop();
             }
             stack.top() = currentItem;
@@ -406,7 +406,7 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
             currentItem = StackItem(code, ojson::array());
             while (stack.top().Type != MARK)
             {
-                currentItem.Value.add(stack.top().Value);
+                currentItem.Value.push_back(stack.top().Value);
                 stack.pop();
             }
             stack.top() = currentItem;
@@ -451,7 +451,7 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
         case APPEND:
             currentItem = stack.top();
             stack.pop();
-            stack.top().Value.add(currentItem.Value);
+            stack.top().Value.push_back(currentItem.Value);
             break;
 
         case BUILD:
@@ -475,7 +475,7 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
             stack.pop();
             currentItem2 = stack.top();
             stack.pop();
-            stack.top().Value.set(currentItem2.Value.as<std::string>(), currentItem.Value);
+            stack.top().Value.insert_or_assign(currentItem2.Value.as<std::string>(), currentItem.Value);
             break;
 
         case PROTO:
@@ -555,7 +555,7 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
                 stack2.pop();
                 currentItem2 = std::move(stack2.top());
                 stack2.pop();
-                stack.top().Value.set(currentItem.Value.as<std::string>(), std::move(currentItem2.Value));
+                stack.top().Value.insert_or_assign(currentItem.Value.as<std::string>(), std::move(currentItem2.Value));
             }
             break;
 
@@ -568,7 +568,7 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
             break;
 
         default:
-            Throw<Exception>() << "Pickle opcode " << code << " not yet supported";
+            throw Exception(fmt::format("Pickle opcode {} not yet supported", code));
         }
     }
 

@@ -19,10 +19,10 @@
 #include "Codec/BencodeCodec.h"
 #include "Codec/IStructuredDataCodec.h"
 #include "Common/Exception.h"
-#include "Common/Throw.h"
 #include "Common/Util.h"
 
 #include <boost/filesystem/path.hpp>
+#include <fmt/format.h>
 
 #include <sstream>
 
@@ -109,7 +109,7 @@ fs::path TorrentInfo::GetFilePath(std::size_t fileIndex) const
     {
         if (fileIndex != 0)
         {
-            Throw<Exception>() << "Torrent file #" << fileIndex << " does not exist";
+            throw Exception(fmt::format("Torrent file #{} does not exist", fileIndex));
         }
 
         result /= GetName();
@@ -120,7 +120,7 @@ fs::path TorrentInfo::GetFilePath(std::size_t fileIndex) const
 
         if (fileIndex >= files.size())
         {
-            Throw<Exception>() << "Torrent file #" << fileIndex << " does not exist";
+            throw Exception(fmt::format("Torrent file #{} does not exist", fileIndex));
         }
 
         for (ojson const& pathPart : files[fileIndex]["path"].array_range())

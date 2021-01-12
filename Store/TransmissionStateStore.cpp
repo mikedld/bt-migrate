@@ -19,7 +19,6 @@
 #include "Common/Exception.h"
 #include "Common/IFileStreamProvider.h"
 #include "Common/IForwardIterator.h"
-#include "Common/Throw.h"
 #include "Common/Util.h"
 #include "Torrent/Box.h"
 #include "Torrent/BoxHelper.h"
@@ -27,9 +26,9 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/format.hpp>
-
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 #include <jsoncons/json.hpp>
-
 #include <pugixml.hpp>
 
 #include <algorithm>
@@ -136,7 +135,7 @@ ojson ToStoreDoNotDownload(std::vector<Box::FileInfo> const& files)
     ojson result = ojson::array();
     for (Box::FileInfo const& file : files)
     {
-        result.add(file.DoNotDownload ? 1 : 0);
+        result.push_back(file.DoNotDownload ? 1 : 0);
     }
     return result;
 }
@@ -146,7 +145,7 @@ ojson ToStorePriority(std::vector<Box::FileInfo> const& files)
     ojson result = ojson::array();
     for (Box::FileInfo const& file : files)
     {
-        result.add(BoxHelper::Priority::ToStore(file.Priority, Detail::MinPriority, Detail::MaxPriority));
+        result.push_back(BoxHelper::Priority::ToStore(file.Priority, Detail::MinPriority, Detail::MaxPriority));
     }
     return result;
 }
@@ -205,7 +204,7 @@ ojson ToStoreProgress(std::vector<bool> const& validBlocks, std::uint32_t blockS
     result[RPField::TimeChecked] = ojson::array();
     for (std::size_t i = 0; i < fileCount; ++i)
     {
-        result[RPField::TimeChecked].add(timeChecked);
+        result[RPField::TimeChecked].push_back(timeChecked);
     }
 
     return result;
@@ -288,7 +287,7 @@ TorrentClient::Enum TransmissionStateStore::GetTorrentClient() const
     return TorrentClient::Transmission;
 }
 
-fs::path TransmissionStateStore::GuessDataDir(Intention::Enum intention) const
+fs::path TransmissionStateStore::GuessDataDir([[maybe_unused]] Intention::Enum intention) const
 {
 #if !defined(_WIN32)
 
@@ -355,16 +354,16 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
     if (box.BlockSize % Detail::BlockSize != 0)
     {
         // See trac #4005.
-        Throw<ImportCancelledException>() << "Transmission does not support torrents with piece length not multiple of two: " <<
-            box.BlockSize;
+        throw ImportCancelledException(fmt::format("Transmission does not support torrents with piece length not multiple of two: {}",
+            box.BlockSize));
     }
 
     for (Box::FileInfo const& file : box.Files)
     {
         if (!file.Path.is_relative())
         {
-            Throw<ImportCancelledException>() << "Transmission does not support moving files outside of download directory: " <<
-                file.Path;
+            throw ImportCancelledException(fmt::format("Transmission does not support moving files outside of download directory: {}",
+                file.Path));
         }
     }
 

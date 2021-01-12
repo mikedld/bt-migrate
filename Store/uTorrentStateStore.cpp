@@ -21,7 +21,6 @@
 #include "Common/IFileStreamProvider.h"
 #include "Common/IForwardIterator.h"
 #include "Common/Logger.h"
-#include "Common/Throw.h"
 #include "Common/Util.h"
 #include "Torrent/Box.h"
 #include "Torrent/BoxHelper.h"

@@ -21,7 +21,6 @@
 #include "Common/IFileStreamProvider.h"
 #include "Common/IForwardIterator.h"
 #include "Common/Logger.h"
-#include "Common/Throw.h"
 #include "Common/Util.h"
 #include "Torrent/Box.h"
 #include "Torrent/BoxHelper.h"
@@ -32,7 +31,7 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
-
+#include <fmt/format.h>
 #include <jsoncons/json.hpp>
 
 #include <locale>
@@ -152,7 +151,7 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
         std::string const infoHash = torrentFilePath.stem().string();
         if (!boost::algorithm::iequals(box.Torrent.GetInfoHash(), infoHash, std::locale::classic()))
         {
-            Throw<Exception>() << "Info hashes don't match: " << box.Torrent.GetInfoHash() << " vs. " << infoHash;
+            throw Exception(fmt::format("Info hashes don't match: {} vs. {}", box.Torrent.GetInfoHash(), infoHash));
         }
     }
 
@@ -276,7 +275,7 @@ TorrentClient::Enum rTorrentStateStore::GetTorrentClient() const
     return TorrentClient::rTorrent;
 }
 
-fs::path rTorrentStateStore::GuessDataDir(Intention::Enum intention) const
+fs::path rTorrentStateStore::GuessDataDir([[maybe_unused]] Intention::Enum intention) const
 {
 #ifndef _WIN32
 

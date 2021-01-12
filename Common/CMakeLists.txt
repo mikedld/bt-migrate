@@ -19,4 +19,5 @@ target_link_libraries(BtMigrateCommon
     PRIVATE
         Boost::boost
         Boost::date_time
+        fmt::fmt
         Threads::Threads)

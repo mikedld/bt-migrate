@@ -17,8 +17,10 @@
 #include "BencodeCodec.h"
 
 #include "Common/Exception.h"
-#include "Common/Throw.h"
 #include "Common/Util.h"
+
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include <iostream>
 #include <sstream>
@@ -31,14 +33,14 @@ ojson DecodeOneValue(std::istream& stream)
     ojson result;
 
     std::string buffer;
-    char c = stream.get();
+    int c = stream.get();
     switch (c)
     {
     case 'i':
         buffer.clear();
         while ((c = stream.get()) != 'e')
         {
-            buffer += c;
+            buffer += static_cast<char>(c);
         }
         result = Util::StringToInt(buffer);
         break;
@@ -48,7 +50,7 @@ ojson DecodeOneValue(std::istream& stream)
         while (stream.get() != 'e')
         {
             stream.unget();
-            result.add(DecodeOneValue(stream));
+            result.push_back(DecodeOneValue(stream));
         }
         break;
 
@@ -59,7 +61,7 @@ ojson DecodeOneValue(std::istream& stream)
             stream.unget();
             ojson key = DecodeOneValue(stream);
             ojson value = DecodeOneValue(stream);
-            result.set(key.as<std::string>(), value);
+            result.insert_or_assign(key.as<std::string>(), value);
         }
         break;
 
@@ -76,7 +78,7 @@ ojson DecodeOneValue(std::istream& stream)
         buffer.clear();
         while (c != ':')
         {
-            buffer += c;
+            buffer += static_cast<char>(c);
             c = stream.get();
         }
         buffer.resize(Util::StringToInt(buffer));
@@ -85,7 +87,7 @@ ojson DecodeOneValue(std::istream& stream)
         break;
 
     default:
-        Throw<Exception>() << "Unable to decode value: " << static_cast<int>(c);
+        throw Exception(fmt::format("Unable to decode value: {}", c));
     }
 
     return result;
@@ -132,7 +134,7 @@ void EncodeOneValue(std::ostream& stream, ojson const& value)
     }
     else
     {
-        Throw<Exception>() << "Unable to encode value: " << value;
+        throw Exception(fmt::format("Unable to encode value: {}", value));
     }
 }
 

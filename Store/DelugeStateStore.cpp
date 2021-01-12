@@ -22,7 +22,6 @@
 #include "Common/IFileStreamProvider.h"
 #include "Common/IForwardIterator.h"
 #include "Common/Logger.h"
-#include "Common/Throw.h"
 #include "Common/Util.h"
 #include "Torrent/Box.h"
 #include "Torrent/BoxHelper.h"
@@ -30,7 +29,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
-
+#include <fmt/format.h>
 #include <jsoncons/json.hpp>
 
 #include <cstdlib>
@@ -175,8 +174,8 @@ DelugeTorrentStateIterator::DelugeTorrentStateIterator(fs::path const& stateDir,
     m_fastResume(std::move(fastResume)),
     m_state(std::move(state)),
     m_fileStreamProvider(fileStreamProvider),
-    m_stateIt(m_state[Detail::StateField::Torrents].begin_elements()),
-    m_stateEnd(m_state[Detail::StateField::Torrents].end_elements()),
+    m_stateIt(m_state[Detail::StateField::Torrents].array_range().begin()),
+    m_stateEnd(m_state[Detail::StateField::Torrents].array_range().end()),
     m_stateItMutex(),
     m_bencoder()
 {
@@ -211,7 +210,7 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
         std::string const infoHash = state[STField::TorrentId].as<std::string>();
         if (!boost::algorithm::iequals(box.Torrent.GetInfoHash(), infoHash, std::locale::classic()))
         {
-            Throw<Exception>() << "Info hashes don't match: " << box.Torrent.GetInfoHash() << " vs. " << infoHash;
+            throw Exception(fmt::format("Info hashes don't match: {} vs. {}", box.Torrent.GetInfoHash(), infoHash));
         }
     }
 
@@ -279,10 +278,10 @@ bool DelugeTorrentStateIterator::GetNext(fs::path& torrentFilePath, ojson& state
         state = *m_stateIt;
 
         auto const torrentIdIt = state.find(STField::TorrentId);
-        if (torrentIdIt == state.end_members())
+        if (torrentIdIt == state.object_range().end())
         {
             Logger(Logger::Warning) << "Torrent ID is missing from state entry #" <<
-                std::distance(m_state[Detail::StateField::Torrents].begin_elements(), m_stateIt) << ", skipping";
+                std::distance(m_state[Detail::StateField::Torrents].array_range().begin(), m_stateIt) << ", skipping";
             continue;
         }
 
@@ -296,7 +295,7 @@ bool DelugeTorrentStateIterator::GetNext(fs::path& torrentFilePath, ojson& state
         }
 
         auto const resumeIt = m_fastResume.find(infoHash);
-        if (resumeIt == m_fastResume.end_members())
+        if (resumeIt == m_fastResume.object_range().end())
         {
             Logger(Logger::Warning) << "Resume info for infohash " << infoHash << " is missing, skipping";
             continue;

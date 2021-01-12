@@ -18,7 +18,6 @@
 
 #include "Exception.h"
 #include "Logger.h"
-#include "Throw.h"
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem/path.hpp>
@@ -28,6 +27,7 @@
 #else
 #include <boost/uuid/sha1.hpp>
 #endif
+#include <fmt/format.h>
 
 #include <algorithm>
 #include <cctype>
@@ -65,7 +65,7 @@ long long StringToInt(std::string const& text)
     long long const result = std::strtoll(text.c_str(), nullptr, 10);
     if (result == 0 && errno != 0)
     {
-        Throw<Exception>() << "Unable to convert \"" << text << "\" to integer";
+        throw Exception(fmt::format("Unable to convert \"{}\" to integer", text));
     }
 
     return result;
@@ -119,7 +119,7 @@ std::string BinaryToHex(std::string const& data)
 
 void SortJsonObjectKeys(ojson& object)
 {
-    std::sort(object.begin_members(), object.end_members(),
+    std::sort(object.object_range().begin(), object.object_range().end(),
         [](auto const& lhs, auto const& rhs) { return lhs.key().compare(rhs.key()) < 0; });
 }
 

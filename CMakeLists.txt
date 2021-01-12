@@ -9,6 +9,7 @@ endif()
 project(BtMigrate VERSION 0.1)
 
 find_package(Boost REQUIRED COMPONENTS date_time filesystem locale program_options system thread)
+find_package(fmt REQUIRED)
 find_package(jsoncons REQUIRED)
 find_package(pugixml REQUIRED)
 find_package(SqliteOrm REQUIRED)
@@ -27,7 +28,11 @@ add_definitions(
     -DBTMIGRATE_VERSION="${PROJECT_VERSION}")
 
 if(WIN32)
-    add_definitions(-DUNICODE -D_UNICODE)
+    add_definitions(
+        -DUNICODE
+        -D_UNICODE
+        -D_CRT_SECURE_NO_WARNINGS
+        -D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 endif()
 
 if(MSVC)
@@ -64,4 +69,5 @@ target_link_libraries(BtMigrate
         Boost::date_time
         Boost::locale
         Boost::program_options
-        Boost::thread)
+        Boost::thread
+        fmt::fmt)
