@@ -55,6 +55,7 @@ std::string const Dnd = "dnd";
 std::string const DoneDate = "done-date";
 std::string const Downloaded = "downloaded";
 std::string const Name = "name";
+std::string const Files = "files";
 std::string const Paused = "paused";
 std::string const Priority = "priority";
 std::string const Progress = "progress";
@@ -378,6 +379,9 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
     resume[RField::DoneDate] = static_cast<std::int64_t>(box.CompletedAt);
     resume[RField::Downloaded] = box.DownloadedSize;
     //resume["downloading-time-seconds"] = 0;
+    try {
+    resume[RField::Files] = box.Torrent.GetFiles(box.SavePath.filename().string());
+    } catch (...) {}
     //resume["idle-limit"] = ojson::object();
     //resume["max-peers"] = 5;
     resume[RField::Name] = box.SavePath.filename().string();
@@ -397,7 +401,7 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
     torrent.SetTrackers(box.Trackers);
 
     std::string const baseName = Util::GetEnvironmentVariable("BT_MIGRATE_TRANSMISSION_2_9X", {}).empty() ?
-        torrent.GetInfoHash() : resume[RField::Name].as_string() + '.' + torrent.GetInfoHash().substr(0, 16);
+        torrent.GetInfoHash() : box.Caption + '.' + torrent.GetInfoHash().substr(0, 16);
 
     fs::path const torrentFilePath = Detail::GetTorrentFilePath(dataDir, baseName, m_stateType);
     fs::create_directories(torrentFilePath.parent_path());

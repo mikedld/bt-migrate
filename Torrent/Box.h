@@ -54,6 +54,7 @@ struct Box
         bool DoNotDownload;
         int Priority;
         boost::filesystem::path Path;
+	std::string Caption;
 
         FileInfo();
     };
@@ -75,4 +76,5 @@ struct Box
     std::vector<FileInfo> Files;
     std::vector<bool> ValidBlocks;
     std::vector<std::vector<std::string>> Trackers;
+    std::string Caption;
 };
