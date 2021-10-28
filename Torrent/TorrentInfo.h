@@ -20,6 +20,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <iosfwd>
 #include <string>
 
@@ -40,7 +41,7 @@ public:
     std::uint64_t GetTotalSize() const;
     std::uint32_t GetPieceSize() const;
     std::string GetName() const;
-    boost::filesystem::path GetFilePath(std::size_t fileIndex) const;
+    std::filesystem::path GetFilePath(std::size_t fileIndex) const;
 
     void SetTrackers(std::vector<std::vector<std::string>> const& trackers);
 

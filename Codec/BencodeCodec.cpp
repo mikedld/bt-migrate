@@ -19,9 +19,6 @@
 #include "Common/Exception.h"
 #include "Common/Util.h"
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-
 #include <iostream>
 #include <sstream>
 
@@ -37,34 +34,39 @@ ojson DecodeOneValue(std::istream& stream)
     switch (c)
     {
     case 'i':
-        buffer.clear();
-        while ((c = stream.get()) != 'e')
-        {
-            buffer += static_cast<char>(c);
-        }
-        result = Util::StringToInt(buffer);
-        break;
-
+    {
+	    buffer.clear();
+    	while ((c = stream.get()) != 'e')
+    	{
+    		buffer += static_cast<char>(c);
+    	}
+    	long long res = Util::StringToNumber<long long>(buffer);
+    	result = res;
+    
+    	break;
+    }
     case 'l':
-        result = ojson::array();
-        while (stream.get() != 'e')
-        {
-            stream.unget();
-            result.push_back(DecodeOneValue(stream));
-        }
-        break;
-
+    {
+	    result = ojson::array();
+    	while (stream.get() != 'e')
+    	{
+    		stream.unget();
+    		result.push_back(DecodeOneValue(stream));
+    	}
+    	break;
+    }
     case 'd':
-        result = ojson::object();
-        while (stream.get() != 'e')
-        {
-            stream.unget();
-            ojson key = DecodeOneValue(stream);
-            ojson value = DecodeOneValue(stream);
-            result.insert_or_assign(key.as<std::string>(), value);
-        }
-        break;
-
+    {
+	    result = ojson::object();
+    	while (stream.get() != 'e')
+    	{
+    		stream.unget();
+    		ojson key = DecodeOneValue(stream);
+    		ojson value = DecodeOneValue(stream);
+    		result.insert_or_assign(key.as<std::string>(), value);
+    	}
+    	break;
+    }
     case '0':
     case '1':
     case '2':
@@ -75,19 +77,22 @@ ojson DecodeOneValue(std::istream& stream)
     case '7':
     case '8':
     case '9':
-        buffer.clear();
-        while (c != ':')
-        {
-            buffer += static_cast<char>(c);
-            c = stream.get();
-        }
-        buffer.resize(Util::StringToInt(buffer));
-        stream.read(&buffer[0], buffer.size());
-        result = buffer;
-        break;
+    {
+	    buffer.clear();
+    	while (c != ':')
+    	{
+    		buffer += static_cast<char>(c);
+    		c = stream.get();
+    	}
 
+    	size_t size = Util::StringToNumber<size_t>(buffer);
+    	buffer.resize(size);
+    	stream.read(&buffer[0], buffer.size());
+    	result = buffer;
+    	break;
+    }
     default:
-        throw Exception(fmt::format("Unable to decode value: {}", c));
+        throw Exception(std::format("Unable to decode value: {}", c));
     }
 
     return result;
@@ -134,7 +139,7 @@ void EncodeOneValue(std::ostream& stream, ojson const& value)
     }
     else
     {
-        throw Exception(fmt::format("Unable to encode value: {}", value));
+        throw Exception(std::format("Unable to encode value: {}", value.to_string()));
     }
 }
 

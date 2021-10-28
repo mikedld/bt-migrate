@@ -16,10 +16,13 @@
 
 #pragma once
 
+#include <filesystem>
+#include <fstream>
+#include <iostream>
 #include <iosfwd>
 #include <memory>
 
-namespace boost::filesystem { class path; }
+namespace fs = std::filesystem;
 
 typedef std::unique_ptr<std::istream> IReadStreamPtr;
 typedef std::unique_ptr<std::ostream> IWriteStreamPtr;
@@ -29,6 +32,6 @@ class IFileStreamProvider
 public:
     virtual ~IFileStreamProvider() noexcept(false);
 
-    virtual IReadStreamPtr GetReadStream(boost::filesystem::path const& path) const = 0;
-    virtual IWriteStreamPtr GetWriteStream(boost::filesystem::path const& path) = 0;
+    virtual IReadStreamPtr GetReadStream(fs::path const& path) const = 0;
+    virtual IWriteStreamPtr GetWriteStream(fs::path const& path) = 0;
 };

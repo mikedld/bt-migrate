@@ -23,22 +23,19 @@
 #include "Torrent/Box.h"
 #include "Torrent/BoxHelper.h"
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/format.hpp>
-#include <fmt/format.h>
-#include <fmt/ostream.h>
 #include <jsoncons/json.hpp>
 #include <pugixml.hpp>
 
 #include <algorithm>
 #include <cstdlib>
 #include <ctime>
+#include <filesystem>
+#include <format>
 #include <iomanip>
 #include <iostream>
 #include <tuple>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace
 {
@@ -48,44 +45,44 @@ namespace Detail
 namespace ResumeField
 {
 
-std::string const AddedDate = "added-date";
-std::string const Corrupt = "corrupt";
-std::string const Destination = "destination";
-std::string const Dnd = "dnd";
-std::string const DoneDate = "done-date";
-std::string const Downloaded = "downloaded";
-std::string const Name = "name";
-std::string const Paused = "paused";
-std::string const Priority = "priority";
-std::string const Progress = "progress";
-std::string const RatioLimit = "ratio-limit";
-std::string const SpeedLimitDown = "speed-limit-down";
-std::string const SpeedLimitUp = "speed-limit-up";
-std::string const Uploaded = "uploaded";
+std::string_view AddedDate = "added-date";
+std::string_view Corrupt = "corrupt";
+std::string_view Destination = "destination";
+std::string_view Dnd = "dnd";
+std::string_view DoneDate = "done-date";
+std::string_view Downloaded = "downloaded";
+std::string_view Name = "name";
+std::string_view Paused = "paused";
+std::string_view Priority = "priority";
+std::string_view Progress = "progress";
+std::string_view RatioLimit = "ratio-limit";
+std::string_view SpeedLimitDown = "speed-limit-down";
+std::string_view SpeedLimitUp = "speed-limit-up";
+std::string_view Uploaded = "uploaded";
 
 namespace ProgressField
 {
 
-std::string const Blocks = "blocks";
-std::string const Have = "have";
-std::string const TimeChecked = "time-checked";
+std::string_view Blocks = "blocks";
+std::string_view Have = "have";
+std::string_view TimeChecked = "time-checked";
 
 } // namespace ProgressField
 
 namespace RatioLimitField
 {
 
-std::string const RatioMode = "ratio-mode";
-std::string const RatioLimit = "ratio-limit";
+std::string_view RatioMode = "ratio-mode";
+std::string_view RatioLimit = "ratio-limit";
 
 } // namespace RatioLimitField
 
 namespace SpeedLimitField
 {
 
-std::string const SpeedBps = "speed-Bps";
-std::string const UseGlobalSpeedLimit = "use-global-speed-limit";
-std::string const UseSpeedLimit = "use-speed-limit";
+std::string_view SpeedBps = "speed-Bps";
+std::string_view UseGlobalSpeedLimit = "use-global-speed-limit";
+std::string_view UseSpeedLimit = "use-speed-limit";
 
 } // namespace SpeedLimitField
 
@@ -217,7 +214,7 @@ ojson ToStoreRatioLimit(Box::LimitInfo const& boxLimit)
     ojson result = ojson::object();
     result[RRLField::RatioMode] = boxLimit.Mode == Box::LimitMode::Inherit ? 0 :
         (boxLimit.Mode == Box::LimitMode::Enabled ? 1 : 2);
-    result[RRLField::RatioLimit] = boost::str(boost::format("%.06f") % boxLimit.Value);
+    result[RRLField::RatioLimit] = std::format("%.06f", boxLimit.Value);
     return result;
 }
 
@@ -354,7 +351,7 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
     if (box.BlockSize % Detail::BlockSize != 0)
     {
         // See trac #4005.
-        throw ImportCancelledException(fmt::format("Transmission does not support torrents with piece length not multiple of two: {}",
+        throw ImportCancelledException(std::format("Transmission does not support torrents with piece length not multiple of two: {}",
             box.BlockSize));
     }
 
@@ -362,8 +359,8 @@ void TransmissionStateStore::Import(fs::path const& dataDir, Box const& box, IFi
     {
         if (!file.Path.is_relative())
         {
-            throw ImportCancelledException(fmt::format("Transmission does not support moving files outside of download directory: {}",
-                file.Path));
+            throw ImportCancelledException(std::format("Transmission does not support moving files outside of download directory: {}",
+                file.Path.string()));
         }
     }
 

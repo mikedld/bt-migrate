@@ -24,9 +24,10 @@
 
 #include "Common/Exception.h"
 
-#include <boost/filesystem/path.hpp>
+#include <filesystem>
 
-namespace fs = boost::filesystem;
+
+namespace fs = std::filesystem;
 
 TorrentStateStoreFactory::TorrentStateStoreFactory() = default;
 

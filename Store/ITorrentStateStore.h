@@ -20,9 +20,11 @@
 #include "Torrent/Intention.h"
 #include "Torrent/TorrentClient.h"
 
+#include <filesystem>
 #include <memory>
 
-namespace boost::filesystem { class path; }
+
+namespace fs = std::filesystem;
 
 template<typename... ArgsT>
 class IForwardIterator;
@@ -40,16 +42,16 @@ public:
 
     virtual TorrentClient::Enum GetTorrentClient() const = 0;
 
-    virtual boost::filesystem::path GuessDataDir(Intention::Enum intention) const = 0;
-    virtual bool IsValidDataDir(boost::filesystem::path const& dataDir, Intention::Enum intention) const = 0;
+    virtual fs::path GuessDataDir(Intention::Enum intention) const = 0;
+    virtual bool IsValidDataDir(fs::path const& dataDir, Intention::Enum intention) const = 0;
 
-    virtual ITorrentStateIteratorPtr Export(boost::filesystem::path const& dataDir,
+    virtual ITorrentStateIteratorPtr Export(fs::path const& dataDir,
         IFileStreamProvider const& fileStreamProvider) const = 0;
-    virtual void Import(boost::filesystem::path const& dataDir, Box const& box,
+    virtual void Import(fs::path const& dataDir, Box const& box,
         IFileStreamProvider& fileStreamProvider) const = 0;
 };
 
-class ImportCancelledException : public Exception
+class ImportCancelledException final : public Exception
 {
 public:
     using Exception::Exception;

@@ -18,6 +18,11 @@
 
 #include "ITorrentStateStore.h"
 
+#include <filesystem>
+
+
+namespace fs = std::filesystem;
+
 class rTorrentStateStore : public ITorrentStateStore
 {
 public:
@@ -28,10 +33,10 @@ public:
     // ITorrentStateStore
     TorrentClient::Enum GetTorrentClient() const override;
 
-    boost::filesystem::path GuessDataDir(Intention::Enum intention) const override;
-    bool IsValidDataDir(boost::filesystem::path const& dataDir, Intention::Enum intention) const override;
+    fs::path GuessDataDir(Intention::Enum intention) const override;
+    bool IsValidDataDir(fs::path const& dataDir, Intention::Enum intention) const override;
 
-    ITorrentStateIteratorPtr Export(boost::filesystem::path const& dataDir,
+    ITorrentStateIteratorPtr Export(fs::path const& dataDir,
         IFileStreamProvider const& fileStreamProvider) const override;
-    void Import(boost::filesystem::path const& dataDir, Box const& box, IFileStreamProvider& fileStreamProvider) const override;
+    void Import(fs::path const& dataDir, Box const& box, IFileStreamProvider& fileStreamProvider) const override;
 };

@@ -19,9 +19,10 @@
 #include "Torrent/Intention.h"
 #include "Torrent/TorrentClient.h"
 
+#include <filesystem>
 #include <memory>
 
-namespace boost::filesystem { class path; }
+namespace fs = std::filesystem;
 
 class ITorrentStateStore;
 typedef std::unique_ptr<ITorrentStateStore> ITorrentStateStorePtr;
@@ -32,5 +33,5 @@ public:
     TorrentStateStoreFactory();
 
     ITorrentStateStorePtr CreateForClient(TorrentClient::Enum client) const;
-    ITorrentStateStorePtr GuessByDataDir(boost::filesystem::path const& dataDir, Intention::Enum intention) const;
+    ITorrentStateStorePtr GuessByDataDir(fs::path const& dataDir, Intention::Enum intention) const;
 };

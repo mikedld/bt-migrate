@@ -24,17 +24,15 @@
 #include "Common/Util.h"
 #include "Torrent/Box.h"
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-
 #include <jsoncons/json.hpp>
 
 #include <sqlite_orm/sqlite_orm.h>
 
+#include <filesystem>
 #include <mutex>
 #include <sstream>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace
 {
@@ -51,16 +49,16 @@ struct ResumeInfo
 namespace ResumeField
 {
 
-std::string const AddedTime = "added_time";
-std::string const CompletedTime = "completed_time";
-std::string const Info = "info";
-std::string const Paused = "paused";
-std::string const Pieces = "pieces";
-std::string const SavePath = "save_path";
-std::string const TotalDownloaded = "total_downloaded";
-std::string const TotalUploaded = "total_uploaded";
-std::string const Trackers = "trackers";
-std::string const UrlList = "url-list";
+std::string_view AddedTime = "added_time";
+std::string_view CompletedTime = "completed_time";
+std::string_view Info = "info";
+std::string_view Paused = "paused";
+std::string_view Pieces = "pieces";
+std::string_view SavePath = "save_path";
+std::string_view TotalDownloaded = "total_downloaded";
+std::string_view TotalUploaded = "total_uploaded";
+std::string_view Trackers = "trackers";
+std::string_view UrlList = "url-list";
 
 } // namespace ResumeField
 
@@ -72,9 +70,9 @@ std::string const UrlList = "url-list";
 
 } // namespace TorrentField
 
-std::string const DataDirName = "uTorrent Web";
-std::string const ResumeFilename = "resume.dat";
-std::string const StoreFilename = "store.dat";
+std::string_view DataDirName = "uTorrent Web";
+std::string_view ResumeFilename = "resume.dat";
+std::string_view StoreFilename = "store.dat";
 
 } // namespace Detail
 } // namespace

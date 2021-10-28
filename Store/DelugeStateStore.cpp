@@ -26,19 +26,17 @@
 #include "Torrent/Box.h"
 #include "Torrent/BoxHelper.h"
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-#include <fmt/format.h>
 #include <jsoncons/json.hpp>
 
 #include <cstdlib>
+#include <filesystem>
+#include <format>
 #include <limits>
 #include <locale>
 #include <mutex>
 #include <sstream>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace
 {
@@ -131,7 +129,7 @@ fs::path GetChangedFilePath(ojson const& mappedFiles, std::size_t index)
 {
     fs::path result;
 
-    if (!mappedFiles.is_null())
+    if (!mappedFiles.is_null() && index < mappedFiles.size())
     {
         fs::path const path = Util::GetPath(mappedFiles[index].as<std::string>());
         fs::path::iterator pathIt = path.begin();
@@ -208,9 +206,9 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
         box.Torrent = TorrentInfo::Decode(*stream, m_bencoder);
 
         std::string const infoHash = state[STField::TorrentId].as<std::string>();
-        if (!boost::algorithm::iequals(box.Torrent.GetInfoHash(), infoHash, std::locale::classic()))
+    	if (!Util::StringEqual(box.Torrent.GetInfoHash(), infoHash))
         {
-            throw Exception(fmt::format("Info hashes don't match: {} vs. {}", box.Torrent.GetInfoHash(), infoHash));
+            throw Exception(std::format("Info hashes don't match: {} vs. {}", box.Torrent.GetInfoHash(), infoHash));
         }
     }
 

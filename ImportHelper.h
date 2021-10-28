@@ -1,8 +1,10 @@
 #pragma once
 
-#include <boost/filesystem/path.hpp>
-
+#include <filesystem>
 #include <memory>
+
+
+namespace fs = std::filesystem;
 
 template<typename... ArgsT>
 class IForwardIterator;
@@ -31,21 +33,21 @@ public:
     };
 
 public:
-    ImportHelper(ITorrentStateStorePtr sourceStore, boost::filesystem::path const& sourceDataDir,
-        ITorrentStateStorePtr targetStore, boost::filesystem::path const& targetDataDir,
+    ImportHelper(ITorrentStateStorePtr sourceStore, fs::path const& sourceDataDir,
+        ITorrentStateStorePtr targetStore, fs::path const& targetDataDir,
         IFileStreamProvider& fileStreamProvider, SignalHandler const& signalHandler);
     ~ImportHelper();
 
     Result Import(unsigned int threadCount);
 
 private:
-    void ImportImpl(boost::filesystem::path const& targetDataDir, ITorrentStateIterator& boxes, Result& result);
+    void ImportImpl(fs::path const& targetDataDir, ITorrentStateIterator& boxes, Result& result);
 
 private:
     ITorrentStateStorePtr const m_sourceStore;
-    boost::filesystem::path const m_sourceDataDir;
+    fs::path const m_sourceDataDir;
     ITorrentStateStorePtr const m_targetStore;
-    boost::filesystem::path const m_targetDataDir;
+    fs::path const m_targetDataDir;
     IFileStreamProvider& m_fileStreamProvider;
     SignalHandler const& m_signalHandler;
 };

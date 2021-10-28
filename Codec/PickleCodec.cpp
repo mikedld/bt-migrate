@@ -19,11 +19,8 @@
 #include "Common/Exception.h"
 #include "Common/Util.h"
 
-#include <boost/endian/arithmetic.hpp>
-#include <boost/version.hpp>
-#include <fmt/format.h>
-
 #include <algorithm>
+#include <bit>
 #include <iostream>
 #include <map>
 #include <stack>
@@ -262,39 +259,25 @@ void PopMark(std::stack<StackItem>& stack)
     }
 }
 
-template<typename NumberT>
-typename NumberT::value_type GetBinNumber(std::istream& stream)
+template<typename T>
+T GetBinNumber(std::istream& stream, std::endian order)
 {
-#if BOOST_VERSION < 107200
-    static_assert(std::is_integral_v<typename NumberT::value_type>);
-#endif
-
-    NumberT result = {};
-    stream.read(const_cast<char*>(reinterpret_cast<const char*>(result.data())), sizeof(typename NumberT::value_type));
-    return result;
-}
-
-double GetBinBigDouble(std::istream& stream)
-{
-#if BOOST_VERSION >= 107200
-    return GetBinNumber<boost::endian::big_float64_t>(stream);
-#else
-    char result[sizeof(double)];
+    static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>);
+    char result[sizeof(T)];
     stream.read(result, sizeof(result));
 
-    if (boost::endian::order::native == boost::endian::order::little)
+    if (order != std::endian::native)
     {
         std::reverse(result, result + sizeof(result));
     }
 
-    return *reinterpret_cast<const double*>(result);
-#endif
+    return *reinterpret_cast<T*>(result);
 }
 
 template<typename LengthT>
-std::string GetBinUnicode(std::istream& stream)
+std::string GetBinUnicode(std::istream& stream, std::endian order)
 {
-    LengthT const length = GetBinNumber<LengthT>(stream);
+    LengthT const length = GetBinNumber<LengthT>(stream, order);
 
     std::string result;
     result.resize(length);
@@ -319,7 +302,7 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
     std::string buffer, buffer2;
     while (!stopped && !stream.eof())
     {
-        int const code = GetBinNumber<boost::endian::little_uint8_t>(stream);
+        int const code = GetBinNumber<uint8_t>(stream, std::endian::little);
         switch (code)
         {
         case MARK:
@@ -356,7 +339,7 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
             }
             else
             {
-                stack.push(StackItem(code, Util::StringToInt(buffer)));
+                stack.push(StackItem(code, Util::StringToNumber<int>(buffer)));
             }
             break;
 
@@ -371,7 +354,7 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
             {
                 buffer.resize(buffer.size() - 1);
             }
-            stack.push(StackItem(code, Util::StringToInt(buffer)));
+            stack.push(StackItem(code, Util::StringToNumber<int>(buffer)));
             break;
 
         case STRING:
@@ -462,12 +445,12 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
 
         case GET:
             std::getline(stream, buffer, '\n');
-            stack.push(memo.at(Util::StringToInt(buffer)));
+            stack.push(memo.at(Util::StringToNumber<long long>(buffer)));
             break;
 
         case PUT:
             std::getline(stream, buffer, '\n');
-            memo[Util::StringToInt(buffer)] = stack.top();
+            memo[Util::StringToNumber<long long>(buffer)] = stack.top();
             break;
 
         case SETITEM:
@@ -489,7 +472,7 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
             break;
 
         case BINPUT:
-            memo[GetBinNumber<boost::endian::little_uint8_t>(stream)] = stack.top();
+            memo[GetBinNumber<uint8_t>(stream, std::endian::little)] = stack.top();
             break;
 
         case NEWOBJ:
@@ -501,7 +484,7 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
             break;
 
         case BINUNICODE:
-            stack.push(StackItem(code, GetBinUnicode<boost::endian::little_uint32_t>(stream)));
+            stack.push(StackItem(code, GetBinUnicode<uint32_t>(stream, std::endian::little)));
             break;
 
         case NEWTRUE:
@@ -513,11 +496,11 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
             break;
 
         case BINFLOAT:
-            stack.push(StackItem(code, GetBinBigDouble(stream)));
+            stack.push(StackItem(code, GetBinNumber<double>(stream, std::endian::big)));
             break;
 
         case BININT1:
-            stack.push(StackItem(code, GetBinNumber<boost::endian::little_int8_t>(stream)));
+            stack.push(StackItem(code, GetBinNumber<int8_t>(stream, std::endian::little)));
             break;
 
         case APPENDS:
@@ -535,11 +518,11 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
             break;
 
         case BININT:
-            stack.push(StackItem(code, GetBinNumber<boost::endian::little_int32_t>(stream)));
+            stack.push(StackItem(code, GetBinNumber<int32_t>(stream, std::endian::little)));
             break;
 
         case BINGET:
-            stack.push(memo[GetBinNumber<boost::endian::little_uint8_t>(stream)]);
+            stack.push(memo[GetBinNumber<uint8_t>(stream, std::endian::little)]);
             break;
 
         case SETITEMS:
@@ -560,15 +543,15 @@ void PickleCodec::Decode(std::istream& stream, ojson& root) const
             break;
 
         case LONG_BINPUT:
-            memo[GetBinNumber<boost::endian::little_uint32_t>(stream)] = stack.top();
+            memo[GetBinNumber<uint32_t>(stream, std::endian::little)] = stack.top();
             break;
 
         case LONG_BINGET:
-            stack.push(memo[GetBinNumber<boost::endian::little_uint32_t>(stream)]);
+            stack.push(memo[GetBinNumber<uint32_t>(stream, std::endian::little)]);
             break;
 
         default:
-            throw Exception(fmt::format("Pickle opcode {} not yet supported", code));
+            throw Exception(std::format("Pickle opcode {} not yet supported", code));
         }
     }
 

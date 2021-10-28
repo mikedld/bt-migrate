@@ -18,26 +18,20 @@
 
 #include "Exception.h"
 #include "Logger.h"
-
-#include <boost/algorithm/string/replace.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/version.hpp>
-#if BOOST_VERSION >= 106600
-#include <boost/uuid/detail/sha1.hpp>
-#else
-#include <boost/uuid/sha1.hpp>
-#endif
-#include <fmt/format.h>
+#include "Sha1.h"
 
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
 #include <cstdlib>
+#include <charconv>
+#include <filesystem>
+#include <format>
 #include <iomanip>
 #include <locale>
 #include <sstream>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace Util
 {
@@ -51,25 +45,13 @@ std::string FixPathSeparators(std::string const& nativePath)
         (nativePath[2] == '/' || nativePath[2] == '\\'))
     {
         // Looks like Windows path
-        return boost::algorithm::replace_all_copy(nativePath, "\\", "/");
+        return ReplaceAll(nativePath, "\\", "/");
     }
 
     return nativePath;
 }
 
 } // namespace
-
-long long StringToInt(std::string const& text)
-{
-    errno = 0;
-    long long const result = std::strtoll(text.c_str(), nullptr, 10);
-    if (result == 0 && errno != 0)
-    {
-        throw Exception(fmt::format("Unable to convert \"{}\" to integer", text));
-    }
-
-    return result;
-}
 
 fs::path GetPath(std::string const& nativePath)
 {
@@ -82,21 +64,21 @@ fs::path GetPath(std::string const& nativePath)
     catch (std::exception const&)
     {
         Logger(Logger::Warning) << "Path " << std::quoted(fixedPath) << " is invalid";
-        return fs::path{fixedPath, std::use_facet<fs::path::codecvt_type>(std::locale::classic())};
+        return fs::path{fixedPath,  std::locale()};
     }
 }
 
 std::string CalculateSha1(std::string const& data)
 {
-    boost::uuids::detail::sha1 sha;
-    sha.process_bytes(data.c_str(), data.size());
+    Sha1 sha;
+    sha.Process(data);
     unsigned int result[5];
-    sha.get_digest(result);
+    sha.GetDigest(result);
 
     std::ostringstream stream;
-    for (std::size_t i = 0; i < sizeof(result) / sizeof(*result); ++i)
+    for (unsigned int i : result)
     {
-        stream << std::hex << std::setw(8) << std::setfill('0') << result[i];
+        stream << std::hex << std::setw(8) << std::setfill('0') << i;
     }
 
     return stream.str();
@@ -127,6 +109,92 @@ std::string GetEnvironmentVariable(std::string const& name, std::string const& d
 {
     auto const* value = std::getenv(name.c_str());
     return value != nullptr ? value : defaultValue;
+}
+
+std::string ReplaceAll(std::string_view str, std::string_view before, std::string_view after)
+{
+    std::string newString;
+    newString.reserve(str.length());
+
+    size_t i = 0, j = 0;
+
+    while ((i = str.find(before, j)) != std::string_view::npos)
+    {
+        newString.append(str, j, i - j);
+        newString.append(after);
+        j = i + before.length();
+    }
+
+    newString.append(str.substr(j));
+
+    return newString;
+}
+
+std::string GetTimestamp(std::string_view fmt)
+{
+    const auto time = std::time(nullptr);
+    std::tm* t = std::localtime(&time);
+
+    char buf[64];
+    return { buf, std::strftime(buf, sizeof(buf), fmt.data(), t) };
+}
+
+typedef std::string::value_type char_t;
+
+static char_t upChar(char_t c)
+{
+    return std::use_facet<std::ctype<char_t>>(std::locale()).toupper(c);
+}
+
+static char_t lowerChar(char_t c)
+{
+    return std::use_facet<std::ctype<char_t>>(std::locale()).tolower(c);
+}
+
+std::string ToUpper(std::string_view str)
+{
+    std::string result;
+    result.resize(str.size());
+    std::transform(str.begin(), str.end(), result.begin(), upChar);
+    return result;
+}
+
+std::string ToLower(std::string_view str)
+{
+    std::string result;
+    result.resize(str.size());
+    std::transform(str.begin(), str.end(), result.begin(), lowerChar);
+    return result;
+}
+
+static std::string_view g_whitespaces = " \n\r\t\f\v";
+
+static std::string ltrim(std::string_view str)
+{
+    if (size_t i = str.find_first_not_of(g_whitespaces); i != std::string::npos)
+    {
+        return std::string(str.substr(i));
+    }
+    return "";
+}
+
+static std::string rtrim(std::string_view str)
+{
+    if (size_t i = str.find_last_not_of(g_whitespaces); i != std::string::npos)
+    {
+        return std::string(str.substr(0, i + 1));
+    }
+    return "";
+}
+
+std::string Trim(std::string_view str)
+{
+    return rtrim(ltrim(str));
+}
+
+bool StringEqual(std::string_view a, std::string_view b)
+{
+    return Trim(ToLower(a)) == Trim(ToLower(b));
 }
 
 } // namespace Util

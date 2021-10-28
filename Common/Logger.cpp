@@ -1,11 +1,9 @@
 #include "Logger.h"
 
-#include <boost/date_time.hpp>
+#include "Util.h"
 
 #include <iostream>
 #include <mutex>
-
-namespace pt = boost::posix_time;
 
 namespace
 {
@@ -47,8 +45,7 @@ Logger::~Logger()
     }
 
     std::lock_guard<std::mutex> lock(LogFlushMutex);
-    std::cout << "[" << pt::to_simple_string(pt::microsec_clock::local_time()) << "] [" << LevelToString(m_level) << "] " <<
-        m_message.str() << std::endl;
+    std::cout << "[" << Util::GetTimestamp() << "] [" << LevelToString(m_level) << "] " << m_message.str() << std::endl;
 }
 
 void Logger::SetMinimumLevel(Level level)

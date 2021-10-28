@@ -24,21 +24,18 @@
 #include "Common/Util.h"
 #include "Torrent/Box.h"
 #include "Torrent/BoxHelper.h"
+#include "Common/Util.h"
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/property_tree/ini_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <fmt/format.h>
 #include <jsoncons/json.hpp>
 
+#include <filesystem>
+#include <format>
 #include <locale>
 #include <mutex>
+#include <regex>
 
-namespace fs = boost::filesystem;
-namespace pt = boost::property_tree;
+
+namespace fs = std::filesystem;
 
 namespace
 {
@@ -148,10 +145,9 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
         IReadStreamPtr const stream = m_fileStreamProvider.GetReadStream(torrentFilePath);
         box.Torrent = TorrentInfo::Decode(*stream, m_bencoder);
 
-        std::string const infoHash = torrentFilePath.stem().string();
-        if (!boost::algorithm::iequals(box.Torrent.GetInfoHash(), infoHash, std::locale::classic()))
+        if (!Util::StringEqual(box.Torrent.GetInfoHash(), torrentFilePath.stem().string()))
         {
-            throw Exception(fmt::format("Info hashes don't match: {} vs. {}", box.Torrent.GetInfoHash(), infoHash));
+            throw Exception(std::format("Info hashes don't match: {} vs. {}", box.Torrent.GetInfoHash(), torrentFilePath.stem().string()));
         }
     }
 
@@ -286,16 +282,21 @@ fs::path rTorrentStateStore::GuessDataDir([[maybe_unused]] Intention::Enum inten
         return {};
     }
 
-    pt::ptree config;
-    {
-        fs::ifstream stream(homeDir / Detail::ConfigFilename, std::ios_base::in);
-        pt::ini_parser::read_ini(stream, config);
-    }
+    std::ifstream stream(homeDir / Detail::ConfigFilename, std::ios_base::in);
+    std::stringstream buffer;
+    buffer << stream.rdbuf();
 
-    fs::path const dataDirPath = Util::GetPath(config.get<std::string>("session"));
-    if (IsValidDataDir(dataDirPath, intention))
+    static const std::regex sessionRegex(R"regex(^\s*(?!#)\s*session\s*=\s*(.+)$)regex");
+    std::smatch sessionMatch;
+
+    std::string config = buffer.str();
+    if (std::regex_search(config, sessionMatch, sessionRegex) && sessionMatch.size() > 1)
     {
-        return dataDirPath;
+        fs::path const dataDirPath = Util::GetPath(sessionMatch.str(1));
+        if (IsValidDataDir(dataDirPath, intention))
+        {
+            return dataDirPath;
+        }
     }
 
 #endif
@@ -313,7 +314,7 @@ bool rTorrentStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum
     for (fs::directory_iterator it(dataDir), end; it != end; ++it)
     {
         fs::path path = it->path();
-        if (path.extension() != Detail::StateFileExtension || it->status().type() != fs::regular_file)
+        if (path.extension() != Detail::StateFileExtension || it->status().type() != fs::file_type::regular)
         {
             continue;
         }

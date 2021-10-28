@@ -16,23 +16,22 @@
 
 #include "TorrentClient.h"
 
+#include "Common/Util.h"
 #include "Common/Exception.h"
-
-#include <boost/algorithm/string/predicate.hpp>
 
 namespace ClientName
 {
 
-std::string const Deluge = "Deluge";
-std::string const rTorrent = "rTorrent";
-std::string const Transmission = "Transmission";
-std::string const TransmissionMac = "TransmissionMac";
-std::string const uTorrent = "uTorrent";
-std::string const uTorrentWeb = "uTorrentWeb";
+std::string_view Deluge = "deluge";
+std::string_view rTorrent = "rtorrent";
+std::string_view Transmission = "transmission";
+std::string_view TransmissionMac = "transmissionmac";
+std::string_view uTorrent = "utorrent";
+std::string_view uTorrentWeb = "utorrentteb";
 
 } // namespace
 
-std::string TorrentClient::ToString(Enum client)
+std::string_view TorrentClient::ToString(Enum client)
 {
     switch (client)
     {
@@ -53,34 +52,20 @@ std::string TorrentClient::ToString(Enum client)
     throw Exception("Unknown torrent client");
 }
 
-TorrentClient::Enum TorrentClient::FromString(std::string client)
+TorrentClient::Enum TorrentClient::FromString(std::string_view client)
 {
-    using boost::algorithm::iequals;
-
-    if (iequals(client, ClientName::Deluge))
-    {
+    if (Util::StringEqual(client, ClientName::Deluge))
         return Deluge;
-    }
-    else if (iequals(client, ClientName::rTorrent))
-    {
+    if (Util::StringEqual(client, ClientName::rTorrent))
         return rTorrent;
-    }
-    else if (iequals(client, ClientName::Transmission))
-    {
+    if (Util::StringEqual(client, ClientName::Transmission))
         return Transmission;
-    }
-    else if (iequals(client, ClientName::TransmissionMac))
-    {
+    if (Util::StringEqual(client, ClientName::TransmissionMac))
         return TransmissionMac;
-    }
-    else if (iequals(client, ClientName::uTorrent))
-    {
+    if (Util::StringEqual(client, ClientName::uTorrent))
         return uTorrent;
-    }
-    else if (iequals(client, ClientName::uTorrentWeb))
-    {
+    if (Util::StringEqual(client, ClientName::uTorrentWeb))
         return uTorrentWeb;
-    }
 
     throw Exception("Unknown torrent client");
 }

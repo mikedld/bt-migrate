@@ -16,19 +16,33 @@
 
 #pragma once
 
+#include "Exception.h"
+
 #include <jsoncons/json.hpp>
 
+#include <charconv>
+#include <filesystem>
+#include <format>
 #include <string>
 
-namespace boost::filesystem { class path; }
+namespace fs = std::filesystem;
 using jsoncons::ojson;
 
 namespace Util
 {
 
-long long StringToInt(std::string const& text);
+template<typename T>
+T StringToNumber(std::string_view str) requires std::is_integral_v<T> || std::is_floating_point_v<T>
+{
+	T value;
+	if (auto [_, ec] = std::from_chars(str.data(), str.data() + str.size(), value); ec != std::errc())
+	{
+		throw Exception(std::format("Unable to convert \"{}\" to number", str));
+	}
+	return value;
+}
 
-boost::filesystem::path GetPath(std::string const& nativePath);
+fs::path GetPath(std::string const& nativePath);
 
 std::string CalculateSha1(std::string const& data);
 
@@ -37,5 +51,17 @@ std::string BinaryToHex(std::string const& data);
 void SortJsonObjectKeys(ojson& object);
 
 std::string GetEnvironmentVariable(std::string const& name, std::string const& defaultValue);
+
+std::string ReplaceAll(std::string_view str, std::string_view before, std::string_view after);
+
+std::string GetTimestamp(std::string_view fmt = "%F_%T");
+
+std::string ToUpper(std::string_view str);
+
+std::string ToLower(std::string_view str);
+
+std::string Trim(std::string_view str);
+
+bool StringEqual(std::string_view a, std::string_view b);
 
 } // namespace Util

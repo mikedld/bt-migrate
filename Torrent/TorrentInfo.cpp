@@ -21,12 +21,11 @@
 #include "Common/Exception.h"
 #include "Common/Util.h"
 
-#include <boost/filesystem/path.hpp>
-#include <fmt/format.h>
-
+#include <filesystem>
+#include <format>
 #include <sstream>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace
 {
@@ -109,7 +108,7 @@ fs::path TorrentInfo::GetFilePath(std::size_t fileIndex) const
     {
         if (fileIndex != 0)
         {
-            throw Exception(fmt::format("Torrent file #{} does not exist", fileIndex));
+            throw Exception(std::format("Torrent file #{} does not exist", fileIndex));
         }
 
         result /= GetName();
@@ -120,7 +119,7 @@ fs::path TorrentInfo::GetFilePath(std::size_t fileIndex) const
 
         if (fileIndex >= files.size())
         {
-            throw Exception(fmt::format("Torrent file #{} does not exist", fileIndex));
+            throw Exception(std::format("Torrent file #{} does not exist", fileIndex));
         }
 
         for (ojson const& pathPart : files[fileIndex]["path"].array_range())

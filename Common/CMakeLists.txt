@@ -6,18 +6,12 @@ add_library(BtMigrateCommon
     IForwardIterator.h
     Logger.cpp
     Logger.h
+    Sha1.cpp
+    Sha1.h
     SignalHandler.cpp
     SignalHandler.h
     ThreadSafeIterator.h
     Util.cpp
     Util.h)
 
-target_link_libraries(BtMigrateCommon
-    PUBLIC
-        Boost::filesystem
-        jsoncons
-    PRIVATE
-        Boost::boost
-        Boost::date_time
-        fmt::fmt
-        Threads::Threads)
+target_link_libraries(BtMigrateCommon PUBLIC jsoncons)

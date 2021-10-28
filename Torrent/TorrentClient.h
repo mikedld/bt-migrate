@@ -33,6 +33,6 @@ struct TorrentClient
     static Enum const FirstClient = Deluge;
     static Enum const LastClient = uTorrent;
 
-    static std::string ToString(Enum client);
-    static Enum FromString(std::string client);
+    static std::string_view ToString(Enum client);
+    static Enum FromString(std::string_view client);
 };

@@ -25,15 +25,12 @@
 #include "Torrent/Box.h"
 #include "Torrent/BoxHelper.h"
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-
 #include <jsoncons/json.hpp>
 
 #include <iostream>
 #include <mutex>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace
 {
@@ -43,21 +40,21 @@ namespace Detail
 namespace ResumeField
 {
 
-std::string const AddedOn = "added_on";
-std::string const CompletedOn = "completed_on";
-std::string const Corrupt = "corrupt";
-std::string const Downloaded = "downloaded";
-std::string const DownSpeed = "downspeed";
-std::string const Have = "have";
-std::string const OverrideSeedSettings = "override_seedsettings";
-std::string const Path = "path";
-std::string const Prio = "prio";
-std::string const Started = "started";
-std::string const Targets = "targets";
-std::string const Trackers = "trackers";
-std::string const Uploaded = "uploaded";
-std::string const UpSpeed = "upspeed";
-std::string const WantedRatio = "wanted_ratio";
+std::string_view AddedOn = "added_on";
+std::string_view CompletedOn = "completed_on";
+std::string_view Corrupt = "corrupt";
+std::string_view Downloaded = "downloaded";
+std::string_view DownSpeed = "downspeed";
+std::string_view Have = "have";
+std::string_view OverrideSeedSettings = "override_seedsettings";
+std::string_view Path = "path";
+std::string_view Prio = "prio";
+std::string_view Started = "started";
+std::string_view Targets = "targets";
+std::string_view Trackers = "trackers";
+std::string_view Uploaded = "uploaded";
+std::string_view UpSpeed = "upspeed";
+std::string_view WantedRatio = "wanted_ratio";
 
 } // namespace ResumeField
 

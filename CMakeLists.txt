@@ -8,18 +8,14 @@ endif()
 
 project(BtMigrate VERSION 0.1)
 
-find_package(Boost REQUIRED COMPONENTS date_time filesystem locale program_options system thread)
-find_package(fmt REQUIRED)
 find_package(jsoncons REQUIRED)
 find_package(pugixml REQUIRED)
 find_package(SqliteOrm REQUIRED)
+find_package(cxxopts REQUIRED)
 
 find_package(Iconv)
-target_link_libraries(Boost::locale
-    INTERFACE
-        $<$<BOOL:${Iconv_FOUND}>:Iconv::Iconv>)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -60,14 +56,5 @@ target_link_libraries(BtMigrate
         BtMigrateCommon
     PRIVATE
         BtMigrateStore
-        BtMigrateTorrent)
-
-target_link_libraries(BtMigrate
-    PUBLIC
-        Boost::filesystem
-    PRIVATE
-        Boost::date_time
-        Boost::locale
-        Boost::program_options
-        Boost::thread
-        fmt::fmt)
+        BtMigrateTorrent
+        cxxopts::cxxopts)

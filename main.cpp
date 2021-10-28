@@ -24,21 +24,17 @@
 #include "Store/TorrentStateStoreFactory.h"
 #include "Torrent/Box.h"
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/locale.hpp>
-#include <boost/program_options.hpp>
-#include <fmt/format.h>
-#include <fmt/ostream.h>
+#include <cxxopts.hpp>
 
 #include <csignal>
 #include <exception>
+#include <filesystem>
+#include <format>
 #include <iostream>
 #include <memory>
 #include <thread>
 
-namespace fs = boost::filesystem;
-namespace po = boost::program_options;
+namespace fs = std::filesystem;
 
 namespace
 {
@@ -52,13 +48,6 @@ void PrintVersion()
         "This program comes with ABSOLUTELY NO WARRANTY. This is free software," << std::endl <<
         "and you are welcome to redistribute it under certain conditions;" << std::endl <<
         "see <http://www.gnu.org/licenses/gpl.html> for details." << std::endl;
-}
-
-void PrintUsage(std::string const& programName, po::options_description const& options)
-{
-    std::cout <<
-        "Usage: " << programName << " [options]" << std::endl <<
-        options;
 }
 
 ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactory, Intention::Enum intention,
@@ -77,7 +66,7 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
             clientDataDir = result->GuessDataDir(intention);
             if (clientDataDir.empty())
             {
-                throw Exception(fmt::format("No data directory found for {} torrent client", lowerCaseClientName));
+                throw Exception(std::format("No data directory found for {} torrent client", lowerCaseClientName));
             }
         }
     }
@@ -87,7 +76,7 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
     }
     else
     {
-        throw Exception(fmt::format("{} torrent client name and/or data directory are not specified", upperCaseClientName));
+        throw Exception(std::format("{} torrent client name and/or data directory are not specified", upperCaseClientName));
     }
 
     clientName = TorrentClient::ToString(result->GetTorrentClient());
@@ -95,7 +84,7 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
 
     if (!result->IsValidDataDir(clientDataDir, intention))
     {
-        throw Exception(fmt::format("Bad {} data directory: {}", lowerCaseClientName, clientDataDir));
+        throw Exception(std::format("Bad {} data directory: {}", lowerCaseClientName, clientDataDir.string()));
     }
 
     Logger(Logger::Info) << upperCaseClientName << ": " << clientName << " (" << clientDataDir << ")";
@@ -105,66 +94,58 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
 
 } // namespace
 
-#ifdef _WIN32
-int wmain(int argc, wchar_t* argv[])
-#else
 int main(int argc, char* argv[])
-#endif
 {
     try
     {
-        std::locale::global(boost::locale::generator().generate(""));
-        fs::path::imbue(std::locale());
+        cxxopts::Options options("bt-migrate", "Torrent state migration tool ");
 
         std::string const programName = fs::path(argv[0]).filename().string();
 
-        std::string sourceName;
-        std::string targetName;
-        std::string sourceDirString;
-        std::string targetDirString;
-        unsigned int maxThreads = std::max(1u, std::thread::hardware_concurrency());
-        bool noBackup = false;
-        bool dryRun = false;
-        bool verboseOutput = false;
+        // unsigned int maxThreads = std::max(1u, std::thread::hardware_concurrency());
 
-        po::options_description mainOptions("Main options");
-        mainOptions.add_options()
-            ("source", po::value<std::string>(&sourceName)->value_name("name"), "source client name")
-            ("source-dir", po::value<std::string>(&sourceDirString)->value_name("path"), "source client data directory")
-            ("target", po::value<std::string>(&targetName)->value_name("name"), "target client name")
-            ("target-dir", po::value<std::string>(&targetDirString)->value_name("path"), "target client data directory")
-            ("max-threads", po::value<unsigned int>(&maxThreads)->value_name("N")->default_value(maxThreads),
-                "maximum number of migration threads")
-            ("no-backup", po::bool_switch(&noBackup), "do not backup target client data directory")
-            ("dry-run", po::bool_switch(&dryRun), "do not write anything to disk");
+        options.add_options()
+    		("source", "source client name", cxxopts::value<std::string>())
+            ("source-dir", "source client data directory", cxxopts::value<std::string>())
+            ("target", "target client name", cxxopts::value<std::string>())
+            ("target-dir", "target client data directory", cxxopts::value<std::string>())
+            ("N,max-threads", "maximum number of migration threads", cxxopts::value<unsigned int>()->default_value("0"))
+            ("no-backup", "do not backup target client data directory", cxxopts::value<bool>()->default_value("false"))
+            ("dry-run", "do not write anything to disk", cxxopts::value<bool>()->default_value("false"))
+            ("verbose", "produce verbose output", cxxopts::value<bool>()->default_value("false"))
+            ("version", "print program version", cxxopts::value<bool>()->default_value("false"))
+            ("help", "print this help message", cxxopts::value<bool>()->default_value("false"))
+    	;
+        cxxopts::ParseResult args = options.parse(argc, argv);
 
-        po::options_description otherOptions("Other options");
-        otherOptions.add_options()
-            ("verbose", po::bool_switch(&verboseOutput), "produce verbose output")
-            ("version", "print program version")
-            ("help", "print this help message");
+        if (args.count("help"))
+        {
+            PrintVersion();
+            std::cout << std::endl << options.help() << std::endl;
+            return 0;
+        }
 
-        po::options_description allOptions;
-        allOptions.add(mainOptions);
-        allOptions.add(otherOptions);
-
-        po::variables_map args;
-        po::store(po::parse_command_line(argc, argv, allOptions), args);
-        po::notify(args);
-
-        if (args.count("version") != 0)
+        if (args.count("version"))
         {
             PrintVersion();
             return 0;
         }
 
-        if (args.count("help") != 0)
+        if (!args.count("source") || !args.count("source-dir") || !args.count("target") || !args.count("target-dir"))
         {
             PrintVersion();
-            std::cout << std::endl;
-            PrintUsage(programName, allOptions);
+            std::cout << std::endl << options.help() << std::endl;
             return 0;
         }
+
+        std::string sourceName = args["source"].as<std::string>();
+        std::string sourceDirString = args["source-dir"].as<std::string>();
+        std::string targetName = args["target"].as<std::string>();
+        std::string targetDirString = args["target-dir"].as<std::string>();
+        unsigned int maxThreads = args["max-threads"].as<unsigned int>();
+        bool noBackup = args["no-backup"].as<bool>();
+        bool dryRun = args["dry-run"].as<bool>();
+        bool verboseOutput = args["verbose"].as<bool>();
 
         if (verboseOutput)
         {
@@ -178,7 +159,7 @@ int main(int argc, char* argv[])
         fs::path targetDir = targetDirString;
         ITorrentStateStorePtr targetStore = FindStateStore(storeFactory, Intention::Import, targetName, targetDir);
 
-        unsigned int const threadCount = std::max(1u, maxThreads);
+        unsigned const threadCount = std::max(1u, maxThreads);
 
         MigrationTransaction transaction(noBackup, dryRun);
 

@@ -18,12 +18,13 @@
 
 #include "TorrentInfo.h"
 
-#include <boost/filesystem/path.hpp>
-
 #include <cstdint>
 #include <ctime>
+#include <filesystem>
 #include <string>
 #include <vector>
+
+namespace fs = std::filesystem;
 
 struct Box
 {
@@ -53,7 +54,7 @@ struct Box
     {
         bool DoNotDownload;
         int Priority;
-        boost::filesystem::path Path;
+        fs::path Path;
 
         FileInfo();
     };
@@ -67,7 +68,7 @@ struct Box
     std::uint64_t DownloadedSize;
     std::uint64_t UploadedSize;
     std::uint64_t CorruptedSize;
-    boost::filesystem::path SavePath;
+    fs::path SavePath;
     std::uint32_t BlockSize;
     LimitInfo RatioLimit;
     LimitInfo DownloadSpeedLimit;

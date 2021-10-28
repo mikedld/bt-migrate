@@ -18,23 +18,19 @@
 
 #include "Common/Exception.h"
 #include "Common/Logger.h"
+#include "Common/Util.h"
 
-#include <boost/date_time.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-
+#include <filesystem>
 #include <locale>
 #include <sstream>
+#include <fstream>
 
-namespace fs = boost::filesystem;
-namespace pt = boost::posix_time;
+namespace fs = std::filesystem;
 
 MigrationTransaction::MigrationTransaction(bool writeThrough, bool dryRun) :
     m_writeThrough(writeThrough),
     m_dryRun(dryRun),
-    m_transactionId(pt::to_iso_string(pt::microsec_clock::local_time())),
+    m_transactionId(Util::GetTimestamp("%Y%m%dT%H%M%S")),
     m_safePaths(),
     m_safePathsMutex()
 {
@@ -90,7 +86,7 @@ void MigrationTransaction::Commit()
 
 IReadStreamPtr MigrationTransaction::GetReadStream(fs::path const& path) const
 {
-    auto result = std::make_unique<fs::ifstream>();
+    auto result = std::make_unique<std::ifstream>();
     result->exceptions(std::ios_base::failbit | std::ios_base::badbit);
 
     try
@@ -106,7 +102,7 @@ IReadStreamPtr MigrationTransaction::GetReadStream(fs::path const& path) const
     }
     catch (std::exception const&)
     {
-        throw Exception(fmt::format("Unable to open file for reading: {}", path));
+        throw Exception(std::format("Unable to open file for reading: {}", path.string()));
     }
 
     return result;
@@ -121,7 +117,7 @@ IWriteStreamPtr MigrationTransaction::GetWriteStream(fs::path const& path)
         "/dev/null";
 #endif
 
-    auto result = std::make_unique<fs::ofstream>();
+    auto result = std::make_unique<std::ofstream>();
     result->exceptions(std::ios_base::failbit | std::ios_base::badbit);
 
     try
@@ -144,7 +140,7 @@ IWriteStreamPtr MigrationTransaction::GetWriteStream(fs::path const& path)
     }
     catch (std::exception const&)
     {
-        throw Exception(fmt::format("Unable to open file for writing: {}", path));
+        throw Exception(std::format("Unable to open file for writing: {}", path.string()));
     }
 
     return result;
