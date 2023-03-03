@@ -6,7 +6,6 @@
     "boost-program-options",
     "boost-property-tree",
     "boost-system",
-    "boost-thread",
     "boost-uuid",
     "fmt",
     "jsoncons",

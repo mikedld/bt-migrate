@@ -8,7 +8,7 @@ endif()
 
 project(BtMigrate VERSION 0.1)
 
-find_package(Boost REQUIRED COMPONENTS date_time program_options system thread)
+find_package(Boost REQUIRED COMPONENTS date_time program_options system)
 find_package(fmt REQUIRED)
 find_package(jsoncons REQUIRED)
 find_package(pugixml REQUIRED)
@@ -61,5 +61,4 @@ target_link_libraries(BtMigrate
     PRIVATE
         Boost::date_time
         Boost::program_options
-        Boost::thread
         fmt::fmt)
