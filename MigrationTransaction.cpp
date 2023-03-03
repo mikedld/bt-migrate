@@ -20,15 +20,15 @@
 #include "Common/Logger.h"
 
 #include <boost/date_time.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/filesystem/operations.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include <filesystem>
+#include <fstream>
 #include <locale>
 #include <sstream>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 namespace pt = boost::posix_time;
 
 MigrationTransaction::MigrationTransaction(bool writeThrough, bool dryRun) :
@@ -90,7 +90,7 @@ void MigrationTransaction::Commit()
 
 IReadStreamPtr MigrationTransaction::GetReadStream(fs::path const& path) const
 {
-    auto result = std::make_unique<fs::ifstream>();
+    auto result = std::make_unique<std::ifstream>();
     result->exceptions(std::ios_base::failbit | std::ios_base::badbit);
 
     try
@@ -121,7 +121,7 @@ IWriteStreamPtr MigrationTransaction::GetWriteStream(fs::path const& path)
         "/dev/null";
 #endif
 
-    auto result = std::make_unique<fs::ofstream>();
+    auto result = std::make_unique<std::ofstream>();
     result->exceptions(std::ios_base::failbit | std::ios_base::badbit);
 
     try

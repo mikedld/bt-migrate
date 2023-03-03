@@ -24,8 +24,6 @@
 #include "Store/TorrentStateStoreFactory.h"
 #include "Torrent/Box.h"
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
 #include <boost/locale.hpp>
 #include <boost/program_options.hpp>
 #include <fmt/format.h>
@@ -33,11 +31,12 @@
 
 #include <csignal>
 #include <exception>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <thread>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 namespace po = boost::program_options;
 
 namespace
@@ -113,9 +112,6 @@ int main(int argc, char* argv[])
 {
     try
     {
-        std::locale::global(boost::locale::generator().generate(""));
-        fs::path::imbue(std::locale());
-
         std::string const programName = fs::path(argv[0]).filename().string();
 
         std::string sourceName;

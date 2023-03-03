@@ -18,8 +18,7 @@
 
 #include "Common/IFileStreamProvider.h"
 
-#include <boost/filesystem/path.hpp>
-
+#include <filesystem>
 #include <mutex>
 #include <set>
 #include <string>
@@ -34,17 +33,17 @@ public:
 
 public:
     // IFileStreamProvider
-    IReadStreamPtr GetReadStream(boost::filesystem::path const& path) const override;
-    IWriteStreamPtr GetWriteStream(boost::filesystem::path const& path) override;
+    IReadStreamPtr GetReadStream(std::filesystem::path const& path) const override;
+    IWriteStreamPtr GetWriteStream(std::filesystem::path const& path) override;
 
 private:
-    boost::filesystem::path GetTemporaryPath(boost::filesystem::path const& path) const;
-    boost::filesystem::path GetBackupPath(boost::filesystem::path const& path) const;
+    std::filesystem::path GetTemporaryPath(std::filesystem::path const& path) const;
+    std::filesystem::path GetBackupPath(std::filesystem::path const& path) const;
 
 private:
     bool const m_writeThrough;
     bool const m_dryRun;
     std::string const m_transactionId;
-    std::set<boost::filesystem::path> m_safePaths;
+    std::set<std::filesystem::path> m_safePaths;
     std::mutex m_safePathsMutex;
 };

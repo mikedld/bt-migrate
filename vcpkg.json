@@ -3,7 +3,6 @@
   "version-string": "0.1",
   "dependencies": [
     "boost-date-time",
-    "boost-filesystem",
     "boost-format",
     "boost-locale",
     "boost-program-options",

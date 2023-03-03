@@ -8,7 +8,7 @@ endif()
 
 project(BtMigrate VERSION 0.1)
 
-find_package(Boost REQUIRED COMPONENTS date_time filesystem locale program_options system thread)
+find_package(Boost REQUIRED COMPONENTS date_time locale program_options system thread)
 find_package(fmt REQUIRED)
 find_package(jsoncons REQUIRED)
 find_package(pugixml REQUIRED)
@@ -63,8 +63,6 @@ target_link_libraries(BtMigrate
         BtMigrateTorrent)
 
 target_link_libraries(BtMigrate
-    PUBLIC
-        Boost::filesystem
     PRIVATE
         Boost::date_time
         Boost::locale

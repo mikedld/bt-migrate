@@ -20,7 +20,6 @@
 #include "Logger.h"
 
 #include <boost/algorithm/string/replace.hpp>
-#include <boost/filesystem/path.hpp>
 #include <boost/version.hpp>
 #if BOOST_VERSION >= 106600
 #include <boost/uuid/detail/sha1.hpp>
@@ -33,11 +32,12 @@
 #include <cctype>
 #include <cerrno>
 #include <cstdlib>
+#include <filesystem>
 #include <iomanip>
 #include <locale>
 #include <sstream>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace Util
 {
@@ -77,12 +77,12 @@ fs::path GetPath(std::string const& nativePath)
 
     try
     {
-        return fs::path{fixedPath};
+        return fs::u8path(fixedPath);
     }
     catch (std::exception const&)
     {
         Logger(Logger::Warning) << "Path " << std::quoted(fixedPath) << " is invalid";
-        return fs::path{fixedPath, std::use_facet<fs::path::codecvt_type>(std::locale::classic())};
+        return fs::path{fixedPath};
     }
 }
 

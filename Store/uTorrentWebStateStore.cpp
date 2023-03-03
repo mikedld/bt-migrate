@@ -24,17 +24,15 @@
 #include "Common/Util.h"
 #include "Torrent/Box.h"
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-
 #include <jsoncons/json.hpp>
 
 #include <sqlite_orm/sqlite_orm.h>
 
+#include <filesystem>
 #include <mutex>
 #include <sstream>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace
 {

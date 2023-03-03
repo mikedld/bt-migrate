@@ -21,12 +21,12 @@
 #include "Common/Exception.h"
 #include "Common/Util.h"
 
-#include <boost/filesystem/path.hpp>
 #include <fmt/format.h>
 
+#include <filesystem>
 #include <sstream>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace
 {

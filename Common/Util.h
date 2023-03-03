@@ -18,9 +18,9 @@
 
 #include <jsoncons/json.hpp>
 
+#include <filesystem>
 #include <string>
 
-namespace boost::filesystem { class path; }
 using jsoncons::ojson;
 
 namespace Util
@@ -28,7 +28,7 @@ namespace Util
 
 long long StringToInt(std::string const& text);
 
-boost::filesystem::path GetPath(std::string const& nativePath);
+std::filesystem::path GetPath(std::string const& nativePath);
 
 std::string CalculateSha1(std::string const& data);
 

@@ -26,18 +26,17 @@
 #include "Torrent/BoxHelper.h"
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <fmt/format.h>
 #include <jsoncons/json.hpp>
 
+#include <filesystem>
+#include <fstream>
 #include <locale>
 #include <mutex>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 namespace pt = boost::property_tree;
 
 namespace
@@ -288,7 +287,7 @@ fs::path rTorrentStateStore::GuessDataDir([[maybe_unused]] Intention::Enum inten
 
     pt::ptree config;
     {
-        fs::ifstream stream(homeDir / Detail::ConfigFilename, std::ios_base::in);
+        std::ifstream stream(homeDir / Detail::ConfigFilename, std::ios_base::in);
         pt::ini_parser::read_ini(stream, config);
     }
 
@@ -313,7 +312,7 @@ bool rTorrentStateStore::IsValidDataDir(fs::path const& dataDir, Intention::Enum
     for (fs::directory_iterator it(dataDir), end; it != end; ++it)
     {
         fs::path path = it->path();
-        if (path.extension() != Detail::StateFileExtension || it->status().type() != fs::regular_file)
+        if (path.extension() != Detail::StateFileExtension || !fs::is_regular_file(it->status()))
         {
             continue;
         }

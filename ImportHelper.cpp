@@ -8,14 +8,13 @@
 #include "Store/ITorrentStateStore.h"
 #include "Torrent/Box.h"
 
-#include <boost/filesystem/path.hpp>
-
 #include <exception>
+#include <filesystem>
 #include <iostream>
 #include <thread>
 #include <vector>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 ImportHelper::Result::Result() :
     SuccessCount(0),
@@ -25,8 +24,8 @@ ImportHelper::Result::Result() :
     //
 }
 
-ImportHelper::ImportHelper(ITorrentStateStorePtr sourceStore, boost::filesystem::path const& sourceDataDir,
-    ITorrentStateStorePtr targetStore, boost::filesystem::path const& targetDataDir, IFileStreamProvider& fileStreamProvider,
+ImportHelper::ImportHelper(ITorrentStateStorePtr sourceStore, fs::path const& sourceDataDir,
+    ITorrentStateStorePtr targetStore, fs::path const& targetDataDir, IFileStreamProvider& fileStreamProvider,
     SignalHandler const& signalHandler) :
     m_sourceStore(std::move(sourceStore)),
     m_sourceDataDir(sourceDataDir),

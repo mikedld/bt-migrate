@@ -1,7 +1,6 @@
 #pragma once
 
-#include <boost/filesystem/path.hpp>
-
+#include <filesystem>
 #include <memory>
 
 template<typename... ArgsT>
@@ -31,21 +30,21 @@ public:
     };
 
 public:
-    ImportHelper(ITorrentStateStorePtr sourceStore, boost::filesystem::path const& sourceDataDir,
-        ITorrentStateStorePtr targetStore, boost::filesystem::path const& targetDataDir,
+    ImportHelper(ITorrentStateStorePtr sourceStore, std::filesystem::path const& sourceDataDir,
+        ITorrentStateStorePtr targetStore, std::filesystem::path const& targetDataDir,
         IFileStreamProvider& fileStreamProvider, SignalHandler const& signalHandler);
     ~ImportHelper();
 
     Result Import(unsigned int threadCount);
 
 private:
-    void ImportImpl(boost::filesystem::path const& targetDataDir, ITorrentStateIterator& boxes, Result& result);
+    void ImportImpl(std::filesystem::path const& targetDataDir, ITorrentStateIterator& boxes, Result& result);
 
 private:
     ITorrentStateStorePtr const m_sourceStore;
-    boost::filesystem::path const m_sourceDataDir;
+    std::filesystem::path const m_sourceDataDir;
     ITorrentStateStorePtr const m_targetStore;
-    boost::filesystem::path const m_targetDataDir;
+    std::filesystem::path const m_targetDataDir;
     IFileStreamProvider& m_fileStreamProvider;
     SignalHandler const& m_signalHandler;
 };

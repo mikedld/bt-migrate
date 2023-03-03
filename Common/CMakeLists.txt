@@ -14,7 +14,6 @@ add_library(BtMigrateCommon
 
 target_link_libraries(BtMigrateCommon
     PUBLIC
-        Boost::filesystem
         jsoncons
     PRIVATE
         Boost::boost

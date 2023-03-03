@@ -28,10 +28,10 @@ public:
     // ITorrentStateStore
     TorrentClient::Enum GetTorrentClient() const override;
 
-    boost::filesystem::path GuessDataDir(Intention::Enum intention) const override;
-    bool IsValidDataDir(boost::filesystem::path const& dataDir, Intention::Enum intention) const override;
+    std::filesystem::path GuessDataDir(Intention::Enum intention) const override;
+    bool IsValidDataDir(std::filesystem::path const& dataDir, Intention::Enum intention) const override;
 
-    ITorrentStateIteratorPtr Export(boost::filesystem::path const& dataDir,
+    ITorrentStateIteratorPtr Export(std::filesystem::path const& dataDir,
         IFileStreamProvider const& fileStreamProvider) const override;
-    void Import(boost::filesystem::path const& dataDir, Box const& box, IFileStreamProvider& fileStreamProvider) const override;
+    void Import(std::filesystem::path const& dataDir, Box const& box, IFileStreamProvider& fileStreamProvider) const override;
 };
