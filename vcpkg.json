@@ -4,7 +4,6 @@
   "dependencies": [
     "boost-date-time",
     "boost-format",
-    "boost-locale",
     "boost-program-options",
     "boost-property-tree",
     "boost-system",

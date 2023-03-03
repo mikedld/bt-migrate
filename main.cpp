@@ -24,7 +24,6 @@
 #include "Store/TorrentStateStoreFactory.h"
 #include "Torrent/Box.h"
 
-#include <boost/locale.hpp>
 #include <boost/program_options.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
