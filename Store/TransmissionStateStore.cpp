@@ -23,7 +23,6 @@
 #include "Torrent/Box.h"
 #include "Torrent/BoxHelper.h"
 
-#include <boost/format.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <jsoncons/json.hpp>
@@ -216,7 +215,7 @@ ojson ToStoreRatioLimit(Box::LimitInfo const& boxLimit)
     ojson result = ojson::object();
     result[RRLField::RatioMode] = boxLimit.Mode == Box::LimitMode::Inherit ? 0 :
         (boxLimit.Mode == Box::LimitMode::Enabled ? 1 : 2);
-    result[RRLField::RatioLimit] = boost::str(boost::format("%.06f") % boxLimit.Value);
+    result[RRLField::RatioLimit] = fmt::format("{:.06f}", boxLimit.Value);
     return result;
 }
 
