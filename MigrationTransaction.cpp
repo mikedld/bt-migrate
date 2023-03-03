@@ -19,22 +19,22 @@
 #include "Common/Exception.h"
 #include "Common/Logger.h"
 
-#include <boost/date_time.hpp>
+#include <fmt/chrono.h>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <locale>
 #include <sstream>
 
 namespace fs = std::filesystem;
-namespace pt = boost::posix_time;
 
 MigrationTransaction::MigrationTransaction(bool writeThrough, bool dryRun) :
     m_writeThrough(writeThrough),
     m_dryRun(dryRun),
-    m_transactionId(pt::to_iso_string(pt::microsec_clock::local_time())),
+    m_transactionId(fmt::format("{:%FT%T%z}", std::chrono::system_clock::now())),
     m_safePaths(),
     m_safePathsMutex()
 {

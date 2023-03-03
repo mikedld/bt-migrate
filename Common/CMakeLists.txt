@@ -17,6 +17,5 @@ target_link_libraries(BtMigrateCommon
         jsoncons
     PRIVATE
         Boost::boost
-        Boost::date_time
         fmt::fmt
         Threads::Threads)
