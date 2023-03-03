@@ -5,7 +5,6 @@
     "boost-date-time",
     "boost-program-options",
     "boost-property-tree",
-    "boost-system",
     "boost-uuid",
     "fmt",
     "jsoncons",
