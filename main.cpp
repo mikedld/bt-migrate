@@ -26,7 +26,7 @@
 
 #include <boost/program_options.hpp>
 #include <fmt/format.h>
-#include <fmt/ostream.h>
+#include <fmt/std.h>
 
 #include <csignal>
 #include <exception>

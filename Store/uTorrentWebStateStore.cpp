@@ -44,6 +44,11 @@ struct ResumeInfo
     std::string InfoHash;
     std::vector<char> ResumeData;
     std::unique_ptr<std::string> SavePath;
+
+    ResumeInfo Copy() const
+    {
+        return {InfoHash, ResumeData, SavePath != nullptr ? std::make_unique<std::string>(*SavePath) : nullptr};
+    }
 };
 
 namespace ResumeField
@@ -185,7 +190,7 @@ bool uTorrentWebTorrentStateIterator::GetNext(Detail::ResumeInfo& resumeInfo)
         return false;
     }
 
-    resumeInfo = std::move(*m_resumeInfoIt);
+    resumeInfo = m_resumeInfoIt->Copy();
 
     ++m_resumeInfoIt;
     return true;

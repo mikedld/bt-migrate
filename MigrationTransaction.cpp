@@ -21,7 +21,7 @@
 
 #include <fmt/chrono.h>
 #include <fmt/format.h>
-#include <fmt/ostream.h>
+#include <fmt/std.h>
 
 #include <chrono>
 #include <filesystem>

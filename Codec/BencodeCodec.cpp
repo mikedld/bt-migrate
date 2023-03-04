@@ -134,7 +134,7 @@ void EncodeOneValue(std::ostream& stream, ojson const& value)
     }
     else
     {
-        throw Exception(fmt::format("Unable to encode value: {}", value));
+        throw Exception(fmt::format("Unable to encode value: {}", fmt::streamed(value)));
     }
 }
 

@@ -24,7 +24,7 @@
 #include "Torrent/BoxHelper.h"
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
+#include <fmt/std.h>
 #include <jsoncons/json.hpp>
 #include <pugixml.hpp>
 
