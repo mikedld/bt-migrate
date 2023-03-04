@@ -8,6 +8,8 @@ endif()
 
 project(BtMigrate VERSION 0.1)
 
+find_package(Threads REQUIRED)
+
 find_package(Boost REQUIRED COMPONENTS program_options)
 find_package(fmt REQUIRED)
 find_package(jsoncons REQUIRED)
