@@ -32,6 +32,6 @@ int BoxHelper::Priority::ToStore(int boxValue, int storeMinValue, int storeMaxVa
 {
     int const storeScaleSize = storeMaxValue - storeMinValue;
     int const boxScaleSize = Box::MaxPriority - Box::MinPriority;
-    double const boxMiddleValue = Box::MinPriority + boxScaleSize / 2.;
+    double const boxMiddleValue = double{Box::MinPriority} + boxScaleSize / 2.;
     return std::lround(1. * (boxValue - boxMiddleValue) * storeScaleSize / boxScaleSize);
 }

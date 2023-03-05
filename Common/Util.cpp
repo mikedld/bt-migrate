@@ -78,7 +78,7 @@ fs::path GetPath(std::string const& nativePath)
 
     try
     {
-        return fs::u8path(fixedPath);
+        return fs::path{std::u8string_view{reinterpret_cast<char8_t const*>(fixedPath.data()), fixedPath.size()}};
     }
     catch (std::exception const&)
     {
