@@ -17,8 +17,7 @@
 #include "TorrentClient.h"
 
 #include "Common/Exception.h"
-
-#include <boost/algorithm/string/predicate.hpp>
+#include "Common/Util.h"
 
 namespace ClientName
 {
@@ -55,29 +54,27 @@ std::string TorrentClient::ToString(Enum client)
 
 TorrentClient::Enum TorrentClient::FromString(std::string client)
 {
-    using boost::algorithm::iequals;
-
-    if (iequals(client, ClientName::Deluge))
+    if (Util::IsEqualNoCase(client, ClientName::Deluge))
     {
         return Deluge;
     }
-    else if (iequals(client, ClientName::rTorrent))
+    else if (Util::IsEqualNoCase(client, ClientName::rTorrent))
     {
         return rTorrent;
     }
-    else if (iequals(client, ClientName::Transmission))
+    else if (Util::IsEqualNoCase(client, ClientName::Transmission))
     {
         return Transmission;
     }
-    else if (iequals(client, ClientName::TransmissionMac))
+    else if (Util::IsEqualNoCase(client, ClientName::TransmissionMac))
     {
         return TransmissionMac;
     }
-    else if (iequals(client, ClientName::uTorrent))
+    else if (Util::IsEqualNoCase(client, ClientName::uTorrent))
     {
         return uTorrent;
     }
-    else if (iequals(client, ClientName::uTorrentWeb))
+    else if (Util::IsEqualNoCase(client, ClientName::uTorrentWeb))
     {
         return uTorrentWeb;
     }

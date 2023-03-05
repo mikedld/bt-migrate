@@ -26,7 +26,6 @@
 #include "Torrent/Box.h"
 #include "Torrent/BoxHelper.h"
 
-#include <boost/algorithm/string/predicate.hpp>
 #include <fmt/format.h>
 #include <jsoncons/json.hpp>
 
@@ -207,7 +206,7 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
         box.Torrent = TorrentInfo::Decode(*stream, m_bencoder);
 
         std::string const infoHash = state[STField::TorrentId].as<std::string>();
-        if (!boost::algorithm::iequals(box.Torrent.GetInfoHash(), infoHash, std::locale::classic()))
+        if (!Util::IsEqualNoCase(box.Torrent.GetInfoHash(), infoHash, std::locale::classic()))
         {
             throw Exception(fmt::format("Info hashes don't match: {} vs. {}", box.Torrent.GetInfoHash(), infoHash));
         }

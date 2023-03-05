@@ -19,7 +19,9 @@
 #include <jsoncons/json.hpp>
 
 #include <filesystem>
+#include <locale>
 #include <string>
+#include <string_view>
 
 using jsoncons::ojson;
 
@@ -37,5 +39,7 @@ std::string BinaryToHex(std::string const& data);
 void SortJsonObjectKeys(ojson& object);
 
 std::string GetEnvironmentVariable(std::string const& name, std::string const& defaultValue);
+
+bool IsEqualNoCase(std::string_view lhs, std::string_view rhs, std::locale const& locale = {});
 
 } // namespace Util

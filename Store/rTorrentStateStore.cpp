@@ -25,7 +25,6 @@
 #include "Torrent/Box.h"
 #include "Torrent/BoxHelper.h"
 
-#include <boost/algorithm/string/predicate.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <fmt/format.h>
@@ -148,7 +147,7 @@ bool rTorrentTorrentStateIterator::GetNext(Box& nextBox)
         box.Torrent = TorrentInfo::Decode(*stream, m_bencoder);
 
         std::string const infoHash = torrentFilePath.stem().string();
-        if (!boost::algorithm::iequals(box.Torrent.GetInfoHash(), infoHash, std::locale::classic()))
+        if (!Util::IsEqualNoCase(box.Torrent.GetInfoHash(), infoHash, std::locale::classic()))
         {
             throw Exception(fmt::format("Info hashes don't match: {} vs. {}", box.Torrent.GetInfoHash(), infoHash));
         }

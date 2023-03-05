@@ -19,7 +19,6 @@
 #include "Exception.h"
 #include "Logger.h"
 
-#include <boost/algorithm/string/replace.hpp>
 #include <boost/version.hpp>
 #if BOOST_VERSION >= 106600
 #include <boost/uuid/detail/sha1.hpp>
@@ -51,7 +50,9 @@ std::string FixPathSeparators(std::string const& nativePath)
         (nativePath[2] == '/' || nativePath[2] == '\\'))
     {
         // Looks like Windows path
-        return boost::algorithm::replace_all_copy(nativePath, "\\", "/");
+        auto result = nativePath;
+        std::replace(result.begin(), result.end(), '\\', '/');
+        return result;
     }
 
     return nativePath;
@@ -127,6 +128,12 @@ std::string GetEnvironmentVariable(std::string const& name, std::string const& d
 {
     auto const* value = std::getenv(name.c_str());
     return value != nullptr ? value : defaultValue;
+}
+
+bool IsEqualNoCase(std::string_view lhs, std::string_view rhs, std::locale const& locale)
+{
+    return lhs.size() == rhs.size() && std::equal(lhs.begin(), lhs.end(), rhs.begin(),
+        [&locale](char lhsChar, char rhsChar){ return std::tolower(lhsChar, locale) == std::tolower(rhsChar, locale); });
 }
 
 } // namespace Util
