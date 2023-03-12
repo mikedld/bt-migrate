@@ -24,10 +24,11 @@
 #include "Store/TorrentStateStoreFactory.h"
 #include "Torrent/Box.h"
 
-#include <boost/program_options.hpp>
+#include <cxxopts.hpp>
 #include <fmt/format.h>
 #include <fmt/std.h>
 
+#include <algorithm>
 #include <csignal>
 #include <exception>
 #include <filesystem>
@@ -35,8 +36,11 @@
 #include <memory>
 #include <thread>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 namespace fs = std::filesystem;
-namespace po = boost::program_options;
 
 namespace
 {
@@ -52,11 +56,9 @@ void PrintVersion()
         "see <http://www.gnu.org/licenses/gpl.html> for details." << std::endl;
 }
 
-void PrintUsage(std::string const& programName, po::options_description const& options)
+void PrintUsage(cxxopts::Options const& options)
 {
-    std::cout <<
-        "Usage: " << programName << " [options]" << std::endl <<
-        options;
+    std::cout << options.help();
 }
 
 ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactory, Intention::Enum intention,
@@ -104,13 +106,35 @@ ITorrentStateStorePtr FindStateStore(TorrentStateStoreFactory const& storeFactor
 } // namespace
 
 #ifdef _WIN32
-int wmain(int argc, wchar_t* argv[])
+int wmain(int argc, wchar_t* wideArgv[])
 #else
 int main(int argc, char* argv[])
 #endif
 {
     try
     {
+#ifdef _WIN32
+        auto argvStrings = std::vector<std::string>(argc);
+        auto argvCStrings = std::vector<char*>(argc);
+        char** const argv = argvCStrings.data();
+
+        for (int i = 0; i < argc; ++i)
+        {
+            int length = ::WideCharToMultiByte(CP_UTF8, 0, wideArgv[i], -1, nullptr, 0, nullptr, nullptr);
+            if (length != 0)
+            {
+                argvStrings[i].resize(length);
+                argvCStrings[i] = argvStrings[i].data();
+                length = ::WideCharToMultiByte(CP_UTF8, 0, wideArgv[i], -1, argv[i], length, nullptr, nullptr);
+            }
+
+            if (length == 0)
+            {
+                throw Exception("Failed to parse Win32 command line");
+            }
+        }
+#endif
+
         std::string const programName = fs::path(argv[0]).filename().string();
 
         std::string sourceName;
@@ -122,30 +146,24 @@ int main(int argc, char* argv[])
         bool dryRun = false;
         bool verboseOutput = false;
 
-        po::options_description mainOptions("Main options");
-        mainOptions.add_options()
-            ("source", po::value<std::string>(&sourceName)->value_name("name"), "source client name")
-            ("source-dir", po::value<std::string>(&sourceDirString)->value_name("path"), "source client data directory")
-            ("target", po::value<std::string>(&targetName)->value_name("name"), "target client name")
-            ("target-dir", po::value<std::string>(&targetDirString)->value_name("path"), "target client data directory")
-            ("max-threads", po::value<unsigned int>(&maxThreads)->value_name("N")->default_value(maxThreads),
-                "maximum number of migration threads")
-            ("no-backup", po::bool_switch(&noBackup), "do not backup target client data directory")
-            ("dry-run", po::bool_switch(&dryRun), "do not write anything to disk");
+        auto options = cxxopts::Options(programName);
 
-        po::options_description otherOptions("Other options");
-        otherOptions.add_options()
-            ("verbose", po::bool_switch(&verboseOutput), "produce verbose output")
+        options.add_options("Main")
+            ("source", "source client name", cxxopts::value<std::string>(sourceName), "name")
+            ("source-dir", "source client data directory", cxxopts::value<std::string>(sourceDirString), "path")
+            ("target", "target client name", cxxopts::value<std::string>(targetName), "name")
+            ("target-dir", "target client data directory", cxxopts::value<std::string>(targetDirString), "path")
+            ("max-threads", "maximum number of migration threads",
+                cxxopts::value<unsigned int>(maxThreads)->default_value(std::to_string(maxThreads)), "N")
+            ("no-backup", "do not backup target client data directory", cxxopts::value<bool>(noBackup))
+            ("dry-run", "do not write anything to disk", cxxopts::value<bool>(dryRun));
+
+        options.add_options("Other")
+            ("verbose", "produce verbose output", cxxopts::value<bool>(verboseOutput))
             ("version", "print program version")
             ("help", "print this help message");
 
-        po::options_description allOptions;
-        allOptions.add(mainOptions);
-        allOptions.add(otherOptions);
-
-        po::variables_map args;
-        po::store(po::parse_command_line(argc, argv, allOptions), args);
-        po::notify(args);
+        auto const args = options.parse(argc, argv);
 
         if (args.count("version") != 0)
         {
@@ -156,8 +174,7 @@ int main(int argc, char* argv[])
         if (args.count("help") != 0)
         {
             PrintVersion();
-            std::cout << std::endl;
-            PrintUsage(programName, allOptions);
+            PrintUsage(options);
             return 0;
         }
 

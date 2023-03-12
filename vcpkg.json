@@ -2,9 +2,9 @@
   "name": "bt-migrate",
   "version-string": "0.1",
   "dependencies": [
-    "boost-program-options",
     "boost-property-tree",
     "boost-uuid",
+    "cxxopts",
     "fmt",
     "jsoncons",
     "pugixml",

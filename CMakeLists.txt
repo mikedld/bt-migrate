@@ -10,7 +10,8 @@ project(BtMigrate VERSION 0.1)
 
 find_package(Threads REQUIRED)
 
-find_package(Boost REQUIRED COMPONENTS program_options)
+find_package(Boost REQUIRED)
+find_package(cxxopts REQUIRED)
 find_package(fmt REQUIRED)
 find_package(jsoncons REQUIRED)
 find_package(pugixml REQUIRED)
@@ -29,7 +30,9 @@ if(WIN32)
         -DUNICODE
         -D_UNICODE
         -D_CRT_SECURE_NO_WARNINGS
-        -D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
+        -D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
+        -DWIN32_LEAN_AND_MEAN
+        -DNOMINMAX)
 endif()
 
 if(MSVC)
@@ -61,5 +64,5 @@ target_link_libraries(BtMigrate
 
 target_link_libraries(BtMigrate
     PRIVATE
-        Boost::program_options
+        cxxopts::cxxopts
         fmt::fmt)
