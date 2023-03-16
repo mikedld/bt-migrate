@@ -19,12 +19,7 @@
 #include "Exception.h"
 #include "Logger.h"
 
-#include <boost/version.hpp>
-#if BOOST_VERSION >= 106600
-#include <boost/uuid/detail/sha1.hpp>
-#else
-#include <boost/uuid/sha1.hpp>
-#endif
+#include <digestpp.hpp>
 #include <fmt/format.h>
 
 #include <algorithm>
@@ -32,9 +27,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <filesystem>
-#include <iomanip>
 #include <locale>
-#include <sstream>
 
 namespace fs = std::filesystem;
 
@@ -89,18 +82,7 @@ fs::path GetPath(std::string const& nativePath)
 
 std::string CalculateSha1(std::string const& data)
 {
-    boost::uuids::detail::sha1 sha;
-    sha.process_bytes(data.c_str(), data.size());
-    unsigned int result[5];
-    sha.get_digest(result);
-
-    std::ostringstream stream;
-    for (std::size_t i = 0; i < sizeof(result) / sizeof(*result); ++i)
-    {
-        stream << std::hex << std::setw(8) << std::setfill('0') << result[i];
-    }
-
-    return stream.str();
+    return digestpp::sha1().absorb(data).hexdigest();
 }
 
 std::string BinaryToHex(std::string const& data)

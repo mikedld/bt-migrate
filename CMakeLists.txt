@@ -8,6 +8,12 @@ endif()
 
 project(BtMigrate VERSION 0.1)
 
+option(USE_FETCHCONTENT "Use FetchContent to resolve dependencies" ON)
+
+if(USE_FETCHCONTENT)
+    include(fetch.cmake)
+endif()
+
 find_package(Threads REQUIRED)
 
 find_package(Boost REQUIRED)
@@ -16,6 +22,10 @@ find_package(fmt REQUIRED)
 find_package(jsoncons REQUIRED)
 find_package(pugixml REQUIRED)
 find_package(SqliteOrm REQUIRED)
+
+if(NOT TARGET digestpp::digestpp)
+    find_package(digestpp REQUIRED)
+endif()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

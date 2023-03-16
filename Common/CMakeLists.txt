@@ -16,6 +16,6 @@ target_link_libraries(BtMigrateCommon
     PUBLIC
         jsoncons
     PRIVATE
-        Boost::boost
+        digestpp::digestpp
         fmt::fmt
         Threads::Threads)
