@@ -2,7 +2,6 @@
   "name": "bt-migrate",
   "version-string": "0.1",
   "dependencies": [
-    "boost-property-tree",
     "cxxopts",
     "fmt",
     "jsoncons",

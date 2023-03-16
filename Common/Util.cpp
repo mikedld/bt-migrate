@@ -31,24 +31,26 @@
 
 namespace fs = std::filesystem;
 
+using namespace std::string_view_literals;
+
 namespace Util
 {
 
 namespace
 {
 
-std::string FixPathSeparators(std::string const& nativePath)
+std::string FixPathSeparators(std::string_view nativePath)
 {
     if (nativePath.size() >= 3 && std::isalpha(nativePath[0]) && nativePath[1] == ':' &&
         (nativePath[2] == '/' || nativePath[2] == '\\'))
     {
         // Looks like Windows path
-        auto result = nativePath;
+        auto result = std::string(nativePath);
         std::replace(result.begin(), result.end(), '\\', '/');
         return result;
     }
 
-    return nativePath;
+    return std::string(nativePath);
 }
 
 } // namespace
@@ -65,7 +67,7 @@ long long StringToInt(std::string const& text)
     return result;
 }
 
-fs::path GetPath(std::string const& nativePath)
+fs::path GetPath(std::string_view nativePath)
 {
     std::string const fixedPath = FixPathSeparators(nativePath);
 
@@ -116,6 +118,23 @@ bool IsEqualNoCase(std::string_view lhs, std::string_view rhs, std::locale const
 {
     return lhs.size() == rhs.size() && std::equal(lhs.begin(), lhs.end(), rhs.begin(),
         [&locale](char lhsChar, char rhsChar){ return std::tolower(lhsChar, locale) == std::tolower(rhsChar, locale); });
+}
+
+std::string_view Trim(std::string_view text)
+{
+    static constexpr auto Blanks = " \t\r\n"sv;
+
+    if (auto const pos = text.find_first_not_of(Blanks); pos != std::string_view::npos)
+    {
+        text.remove_prefix(pos);
+    }
+
+    if (auto const pos = text.find_last_not_of(Blanks); pos != std::string_view::npos)
+    {
+        text.remove_suffix(text.size() - pos - 1);
+    }
+
+    return text;
 }
 
 } // namespace Util

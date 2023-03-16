@@ -24,7 +24,6 @@ target_link_libraries(BtMigrateStore
 
 target_link_libraries(BtMigrateStore
     PRIVATE
-        Boost::boost
         fmt::fmt
         jsoncons
         pugixml::pugixml

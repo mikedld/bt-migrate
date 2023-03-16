@@ -16,7 +16,6 @@ endif()
 
 find_package(Threads REQUIRED)
 
-find_package(Boost REQUIRED)
 find_package(cxxopts REQUIRED)
 find_package(fmt REQUIRED)
 find_package(jsoncons REQUIRED)

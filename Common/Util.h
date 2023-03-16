@@ -30,7 +30,7 @@ namespace Util
 
 long long StringToInt(std::string const& text);
 
-std::filesystem::path GetPath(std::string const& nativePath);
+std::filesystem::path GetPath(std::string_view nativePath);
 
 std::string CalculateSha1(std::string const& data);
 
@@ -41,5 +41,7 @@ void SortJsonObjectKeys(ojson& object);
 std::string GetEnvironmentVariable(std::string const& name, std::string const& defaultValue);
 
 bool IsEqualNoCase(std::string_view lhs, std::string_view rhs, std::locale const& locale = {});
+
+std::string_view Trim(std::string_view text);
 
 } // namespace Util
