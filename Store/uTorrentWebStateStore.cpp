@@ -155,7 +155,7 @@ bool uTorrentWebTorrentStateIterator::GetNext(Box& nextBox)
 
     box.Torrent = ojson{ojson::object{
         {TField::Info, resume[RField::Info]},
-        {TField::UrlList, resume.get_with_default(RField::UrlList, ojson{ojson::array{}})}
+        {TField::UrlList, resume.get_value_or<std::vector<std::string>>(RField::UrlList, std::vector<std::string>())}
     }};
 
     box.AddedAt = resume[RField::AddedTime].as<std::time_t>();
@@ -175,7 +175,7 @@ bool uTorrentWebTorrentStateIterator::GetNext(Box& nextBox)
         box.ValidBlocks.push_back(isPieceValid);
     }
 
-    box.Trackers = resume.get_with_default(RField::Trackers, ojson{ojson::array{}}).as<decltype(box.Trackers)>();
+    box.Trackers = resume.get_value_or<decltype(box.Trackers)>(RField::Trackers, decltype(box.Trackers)());
 
     nextBox = std::move(box);
     return true;

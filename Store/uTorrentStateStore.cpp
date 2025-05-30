@@ -184,7 +184,7 @@ bool uTorrentTorrentStateIterator::GetNext(Box& nextBox)
     box.UploadSpeedLimit = FromStoreSpeedLimit(resume[RField::UpSpeed]);
 
     std::string const filePriorities = resume[RField::Prio].as<std::string>();
-    ojson const& targets = resume.get_with_default(RField::Targets, ojson::null());
+    ojson const& targets = resume.at_or_null(RField::Targets);
     box.Files.reserve(filePriorities.size());
     for (std::size_t i = 0; i < filePriorities.size(); ++i)
     {

@@ -226,7 +226,7 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
     box.UploadSpeedLimit = FromStoreSpeedLimit(state[STField::MaxUploadSpeed]);
 
     ojson const& filePriorities = state[STField::FilePriorities];
-    ojson const& mappedFiles = fastResume.get_with_default(FRField::MappedFiles, ojson::null());
+    ojson const& mappedFiles = fastResume.at_or_null(FRField::MappedFiles);
     box.Files.reserve(filePriorities.size());
     for (std::size_t i = 0; i < filePriorities.size(); ++i)
     {

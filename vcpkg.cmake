@@ -2,7 +2,7 @@ include(FetchContent)
 
 FetchContent_Declare(vcpkg
     GIT_REPOSITORY https://github.com/microsoft/vcpkg.git
-    GIT_TAG 2023.08.09)
+    GIT_TAG 2025.04.09)
 FetchContent_MakeAvailable(vcpkg)
 
 set(VCPKG_VERBOSE ON CACHE INTERNAL "")
