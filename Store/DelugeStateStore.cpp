@@ -131,11 +131,18 @@ fs::path GetChangedFilePath(ojson const& mappedFiles, std::size_t index)
 
     if (!mappedFiles.is_null())
     {
-        fs::path const path = Util::GetPath(mappedFiles[index].as<std::string>());
-        fs::path::iterator pathIt = path.begin();
-        while (++pathIt != path.end())
+        if (index < mappedFiles.size())
         {
-            result /= *pathIt;
+            fs::path const path = Util::GetPath(mappedFiles[index].as<std::string>());
+            fs::path::iterator pathIt = path.begin();
+            while (++pathIt != path.end())
+            {
+                result /= *pathIt;
+            }
+        }
+        else
+        {
+            Logger(Logger::Warning) << "Mapping information missing for file #" << index;
         }
     }
 
@@ -227,6 +234,9 @@ bool DelugeTorrentStateIterator::GetNext(Box& nextBox)
 
     ojson const& filePriorities = state[STField::FilePriorities];
     ojson const& mappedFiles = fastResume.at_or_null(FRField::MappedFiles);
+    Logger(Logger::Debug) << "Got " << filePriorities.size() << " file priorities, " <<
+        (mappedFiles.is_null() ? 0 : mappedFiles.size()) << " mapped files";
+
     box.Files.reserve(filePriorities.size());
     for (std::size_t i = 0; i < filePriorities.size(); ++i)
     {
