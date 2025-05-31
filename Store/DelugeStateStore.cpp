@@ -131,18 +131,14 @@ fs::path GetChangedFilePath(ojson const& mappedFiles, std::size_t index)
 
     if (!mappedFiles.is_null())
     {
-        if (index < mappedFiles.size())
+        if (const auto fileIt = mappedFiles.find(std::to_string(index)); fileIt != mappedFiles.object_range().end())
         {
-            fs::path const path = Util::GetPath(mappedFiles[index].as<std::string>());
+            fs::path const path = Util::GetPath(fileIt->value().as<std::string>());
             fs::path::iterator pathIt = path.begin();
             while (++pathIt != path.end())
             {
                 result /= *pathIt;
             }
-        }
-        else
-        {
-            Logger(Logger::Warning) << "Mapping information missing for file #" << index;
         }
     }
 
