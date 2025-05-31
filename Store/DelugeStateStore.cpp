@@ -129,11 +129,11 @@ fs::path GetChangedFilePath(ojson const& mappedFiles, std::size_t index)
 {
     fs::path result;
 
-    if (!mappedFiles.is_null())
+    if (!mappedFiles.is_null() && index < mappedFiles.size())
     {
-        if (const auto fileIt = mappedFiles.find(std::to_string(index)); fileIt != mappedFiles.object_range().end())
+        if (const auto maybePath = mappedFiles[index].as<std::string>(); !maybePath.empty())
         {
-            fs::path const path = Util::GetPath(fileIt->value().as<std::string>());
+            fs::path const path = Util::GetPath(maybePath);
             fs::path::iterator pathIt = path.begin();
             while (++pathIt != path.end())
             {
